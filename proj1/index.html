@@ -1,0 +1,365 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <style>
+      body {
+        padding: 60px;
+        width: 1100px;
+        margin: auto;
+        text-align: left;
+        font-family: "Open Sans", sans-serif;
+        color: #121212;
+      }
+      h1 h2,
+      h3,
+      h4 {
+        font-family: "Source Sans Pro", sans-serif;
+      }
+      .image-container {
+        display: flex;
+        flex-wrap: wrap;
+      }
+      .title {
+        font-size: 24px;
+        font-weight: "bold";
+      }
+      .subtitle {
+        font-size: 18px;
+        font-weight: "bold";
+        margin-top: 20px;
+      }
+      .image {
+        flex: 1;
+        text-align: center;
+      }
+      .container {
+        display: flex;
+        align-items: flex-start;
+      }
+    </style>
+    <title>
+      Images of the Russian Empire: Colorizing the Prokudin-Gorskii Photo
+      Collection
+    </title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <link
+      href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <h1 class="title">
+      CS 180: Intro to Computer Vision and Computational Photography
+    </h1>
+    <h1 class="title">
+      Images of the Russian Empire: Colorizing the Prokudin-Gorskii Photo
+      Collection
+    </h1>
+    <h2 class="subtitle">Natalie Wei (3037990373)</h2>
+
+    <br /><br />
+
+    <div>
+      <center>
+        <img
+          src="out/emir_crop.jpg"
+          align="middle"
+          width="600px"
+          style="margin-bottom: 50px; margin-top: 25px"
+        />
+      </center>
+
+      <h2 class="title">Overview</h2>
+      <p>
+        In the 1900s, Sergei Mikhailovich Prokudin-Horskii traveled around the
+        Russian Empire performing groundbreaking work in color photography.
+        Prokudin-Horskii recorded various scenes three times onto red, green,
+        and blue filtered glass plates. Given digitized versions of these glass
+        plate negatives, my goal for this project was to extract the r, g, and b
+        channels from their respective plates and align them together, forming a
+        single RGB image to recreate a fully-colored photograph. First, I
+        implemented an exhaustive search algorithm that aligns small images; I
+        also implemented pyramid search to align large images efficiently.
+        Finally, I polished my results with some bells and whistles.
+      </p>
+
+      <h2 class="title" style="margin-top: 50px">
+        Section I: Exhaustive Search
+      </h2>
+
+      <h3 class="subtitle">Overview</h3>
+      <p>
+        To align small .jpg files, I split each image into its r, g, and b
+        channels, treating the b channel as the template. Then, I performed
+        naive grid search by exhaustively searching through a window of
+        displacements [-15, 15] pixels large. I scored each (x, y) displacement
+        with an image matching metric, keeping track of the one with the best
+        metric and returning it as the most optimal displacement. Finally, I
+        used circular translate to displace the r and g channels, stacking all
+        of the channels on top of each other to produce an aligned and
+        fully-colored photograph. After comparing the results of minimum
+        Euclidean distance with those of the maximum normalized
+        cross-correlation, I settled on NCC as my image metric, as it seemed to
+        produce better alignments.
+      </p>
+      <p>
+        Some border artifacts were affecting the calculations, so I hardcoded
+        cropping by slicing a 15% margin from the sides of each channel before
+        alignment. I realized that I should align the uncropped images for my
+        final result, as the images looked zoomed in otherwise.
+      </p>
+      <h3 class="subtitle">Results</h3>
+      <div class="image-container">
+        <div class="image">
+          <h3>cathedral.jpg</h3>
+          <img src="out/cathedral.jpg" width="360px" />
+          <p>g: (2, 5), r: (3, 12)</p>
+        </div>
+        <div class="image">
+          <h3>monastery.jpg</h3>
+          <img src="out/monastery.jpg" width="360px" />
+          <p>g: (2, -3), r: (2, 3)</p>
+        </div>
+        <div class="image">
+          <h3>tobolsk.jpg</h3>
+          <img src="out/tobolsk.jpg" width="360px" />
+          <p>g: (3, 3), r: (3, 6)</p>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 50px">Section II: Pyramid Search</h2>
+
+      <h3 class="subtitle">Overview</h3>
+      <p>
+        Performing exhaustive search on large images becomes prohibitively
+        expensive, as the window size must scale with the image size. To
+        efficiently align even large .tif files, I implemented a recursive
+        pyramid search method that aligns .tif files in about 10 seconds.
+      </p>
+
+      <div class="container">
+        <div class="text">
+          <p>
+            Conceptually, I start with the original image, then scale down until
+            the image is small enough for naive exhaustive search. As I travel
+            back down the pyramid, I scale each image and displacement from the
+            previous level until I arrive back at the original image.
+          </p>
+          <p>
+            For images smaller than 256 x 256 pixels, I performed naive
+            exhaustive search with a window size of [-15, 15]—this served as my
+            base case. Otherwise, I scaled both images down by 2 and recursively
+            calculated their best displacement. I scaled this displacement up by
+            2 so it would accurately align an image with twice the height and
+            width, then rolled the original image by the scaled displacement.
+            Finally, I performed exhaustive search to find the displacement
+            between the rolled image and the template. I incremented these
+            displacements for my final displacement.
+          </p>
+          <p>
+            To optimize further, I also updated the window size for exhaustive
+            search at each level. The smallest image uses [-15, 15] window,
+            which is decreased by 2 at each subsequent level until reaching a
+            minimum range of [-4, 4]. This way, I'm not searching across a wider
+            range than necessary at any level.
+          </p>
+          <p>
+            The pyramid search method worked on all of the images except for
+            emir.tif, likely due to the difference in brightness between its red
+            and blue channels. I address this in Bells & Whistles.
+          </p>
+        </div>
+        <div class="image">
+          <img src="out/image_pyramid.png" width="400px" />
+        </div>
+      </div>
+      <h3 class="subtitle">Results</h3>
+      <div class="image-container">
+        <div class="image">
+          <h3>church.tif</h3>
+          <img src="out/church.jpg" width="360px" />
+          <p>g: (4, 25), r: (-4, 58)</p>
+        </div>
+        <div class="image">
+          <h3>three_generations.tif</h3>
+          <img src="out/three_generations.jpg" width="360px" />
+          <p>g: (13, 52), r: (11, 111)</p>
+        </div>
+        <div class="image">
+          <h3>melons.tif</h3>
+          <img src="out/melons.jpg" width="360px" />
+          <p>g: (10, 81), r: (13, 178)</p>
+        </div>
+        <div class="image">
+          <h3>onion_church.tif</h3>
+          <img src="out/onion_church.jpg" width="360px" />
+          <p>g: (27, 51), r: (36, 108)</p>
+        </div>
+        <div class="image">
+          <h3>train.tif</h3>
+          <img src="out/train.jpg" width="360px" />
+          <p>g: (6, 42), r: (32, 87)</p>
+        </div>
+        <div class="image">
+          <h3>icon.tif</h3>
+          <img src="out/icon.jpg" width="360px" />
+          <p>g: (17, 41), r: (23, 89)</p>
+        </div>
+        <div class="image">
+          <h3>self_portrait.tif</h3>
+          <img src="out/self_portrait.jpg" width="360px" />
+          <p>g: (29, 78), r: (37, 176)</p>
+        </div>
+        <div class="image">
+          <h3>harvesters.tif</h3>
+          <img src="out/harvesters.jpg" width="360px" />
+          <p>g: (17, 59), r: (13, 123)</p>
+        </div>
+        <div class="image">
+          <h3>sculpture.tif</h3>
+          <img src="out/sculpture.jpg" width="360px" />
+          <p>g: (-11, 33), r: (-27, 140)</p>
+        </div>
+        <div class="image">
+          <h3>lady.tif</h3>
+          <img src="out/lady.jpg" width="360px" />
+          <p>g: (8, 52), r: (11, 113)</p>
+        </div>
+        <div class="image">
+          <h3>emir.tif</h3>
+          <img src="out/emir.jpg" width="360px" />
+          <p>g: (2, -3), r: (2, 3)</p>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 50px">Section III: Bells & Whistles</h2>
+      <h3 class="subtitle">Edge Detection</h3>
+      <p>
+        I explored two different ways of correcting emir.tif: color mapping and
+        edge detection.
+      </p>
+      <p>
+        Simply aligning the b and r channels to the g channel instead of the
+        original color mapping produced an improved result.
+      </p>
+      <p>
+        I also looked into edge detection with Sobel filters, which can locate
+        edges by finding pixels with a larger relative magnitude. Instead of
+        comparing brightness values between pixels, I aligned images based on
+        their edges, producing improved results as well.
+      </p>
+      <h3 class="subtitle">Results</h3>
+      <div class="image-container">
+        <div class="image">
+          <h3>Original</h3>
+          <img src="out/emir.jpg" width="360px" />
+          <p>g: (2, -3), r: (2, 3)</p>
+        </div>
+        <div class="image">
+          <h3>Color mapping</h3>
+          <img src="out/emir_alt.jpg" width="360px" />
+          <p>b: (-49, -24), r: (57, 17)</p>
+        </div>
+        <div class="image">
+          <h3>Edge detection</h3>
+          <img src="out/emir_edge.jpg" width="360px" />
+          <p>g: (23, 49), r: (40, 107)</p>
+        </div>
+      </div>
+
+      <h3 class="subtitle">Auto-Contrast</h3>
+      <p>
+        To keep my results from looking washed out, I applied adaptive histogram
+        equalization on the final images. Histogram equalization improves
+        contrast by redistributing an image's luminance values. Adaptive
+        histogram equalization does this locally for multiple parts across an
+        image, yielding more natural-looking results.
+      </p>
+      <h3 class="subtitle">Results</h3>
+      <div class="image-container">
+        <div class="image">
+          <h3>train.tif</h3>
+          <img src="out/train.jpg" width="360px" />
+          <p>Without contrast</p>
+        </div>
+        <div class="image">
+          <h3>lady.tif</h3>
+          <img src="out/lady.jpg" width="360px" />
+          <p>Without contrast</p>
+        </div>
+        <div class="image">
+          <h3>three_generations.tif</h3>
+          <img src="out/three_generations.jpg" width="360px" />
+          <p>Without contrast</p>
+        </div>
+        <div class="image">
+          <img src="out/train_contrast.jpg" width="360px" />
+          <p>With contrast</p>
+        </div>
+        <div class="image">
+          <img src="out/lady_contrast.jpg" width="360px" />
+          <p>With contrast</p>
+        </div>
+        <div class="image">
+          <img src="out/three_generations_contrast.jpg" width="360px" />
+          <p>With contrast</p>
+        </div>
+      </div>
+
+      <h3 class="subtitle">Auto-Crop</h3>
+      <p>
+        Most of the images have black and white borders that cause artifacts when aligned. To reduce the artifacts, I created an auto-cropping method that removes borders before alignment.
+      </p>
+      <p>
+        I created functions that crop the left and right sides as well as the top and bottom. First, I look through a “strip” of pixels and calculate how many “black” and “white” pixels there are based on how many pixels fall under certain thresholds. I divide the number of black and white pixels by the size of the strip, then crop the strip if it meets a predetermined ratio. This method proved to be more effective at cropping thick and wonky edges than taking the average pixel brightness or going line by line.
+      </p>
+      <p>
+        I cropped the left and right borders from the original image before splitting it into its color channels, then cropped the top and bottom borders from each channel. I aligned the cropped images to achieve a final result with less artifacting.
+      </p>
+      <h3 class="subtitle">Results</h3>
+      <div class="image-container">
+        <div class="image">
+          <h3>self_portrait.tif</h3>
+          <img src="out/self_portrait.jpg" width="360px" />
+          <p>g: (29, 78), r: (37, 176)</p>
+        </div>
+        <div class="image">
+          <h3>onion_church.tif</h3>
+          <img src="out/onion_church.jpg" width="360px" />
+          <p>g: (27, 51), r: (36, 108)</p>
+        </div>
+      </div>
+    </div>
+    <div class="image-container">
+      <div class="image">
+        <img src="out/self_portrait_crop.jpg" width="360px" />
+        <p>g: (29, 39), r: (36, 16)</p>
+      </div>
+      <div class="image">
+        <img src="out/onion_church_crop.jpg" width="360px" />
+        <p>g: (26, 51), r: (36, -42)</p>
+      </div>
+    </div>
+  </div>
+
+    <h2 style="margin-top: 50px">Section IV: Additional Images</h2>
+    <div class="image-container">
+      <div class="image">
+        <h3>siren.tif</h3>
+        <img src="out/siren.jpg" width="360px" />
+        <p>g: (-7, 48), r: (-21, 96)</p>
+      </div>
+      <div class="image">
+        <h3>caravan.tif</h3>
+        <img src="out/caravan.jpg" width="360px" />
+        <p>g: (23, 68), r: (40, 147)</p>
+      </div>
+      <div class="image">
+        <h3>mine.tif</h3>
+        <img src="out/mine.jpg" width="360px" />
+        <p>g: (21, 37), r: (39, 91)</p>
+      </div>
+    </div>
+  </body>
+</html>
