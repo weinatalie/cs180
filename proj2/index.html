@@ -1,0 +1,795 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <style>
+      body {
+        padding: 60px;
+        width: 1100px;
+        margin: auto;
+        text-align: left;
+        font-family: "Open Sans", sans-serif;
+        color: #121212;
+      }
+      h1 h2,
+      h3,
+      h4 {
+        font-family: "Source Sans Pro", sans-serif;
+      }
+      .image-container {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-top: 20px;
+      }
+      .title {
+        font-size: 24px;
+        font-weight: "bold";
+      }
+      .subtitle {
+        font-size: 18px;
+        font-weight: "bold";
+        margin-top: 16px;
+      }
+      .image {
+        flex: 1;
+        text-align: center;
+      }
+      .container {
+        display: flex;
+        align-items: flex-start;
+      }
+    </style>
+    <title>Fun with Filters and Frequencies</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <link
+      href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <h1 class="title">
+      CS 180: Intro to Computer Vision and Computational Photography
+    </h1>
+    <h1 class="title">Fun with Filters and Frequencies</h1>
+    <h2 class="subtitle">Natalie Wei (3037990373)</h2>
+
+    <br /><br />
+
+    <div>
+      <center>
+        <img
+          src="out/miffy_field_final.jpg"
+          align="middle"
+          width="750px"
+          style="margin-bottom: 50px; margin-top: 25px"
+        />
+      </center>
+
+      <h2 class="title">Overview</h2>
+      <p>
+        My goal for this project was to create interesting visual effects by
+        manipulating image frequencies. This involved applying my knowledge of
+        difference operators, low-pass filters, high-pass filters, and more to
+        implement functions such as image sharpening, image hybridization, and
+        image blending. My most important takeaway from the project was a better
+        understanding of the math and logic behind various photo editing tools—
+        actually implementing the methods myself helped me see photo editing as
+        a logical process instead of a black box.
+      </p>
+
+      <h2 class="title" style="margin-top: 50px">
+        Section I: Fun with Filters
+      </h2>
+
+      <h3 class="subtitle">Part 1.1: Finite Difference Operator</h3>
+      <p>
+        To retain the partial derivatives in x and y of the image, I convolved
+        it with the finite difference operators Dx and Dy, which were simply
+        created with arrays. Next, to obtain the gradient magnitude, I
+        calculated the square root of the sum of the squares of the partial
+        derivatives.
+      </p>
+
+      <center>
+        <img
+          src="data/dx_dy.png"
+          align="middle"
+          width="300px"
+          style="margin-bottom: 20px; margin-top: 20px"
+        />
+      </center>
+
+      <center>
+        <img
+          src="data/gradient_magnitude_eqn.png"
+          align="middle"
+          width="300px"
+          style="margin-bottom: 20px"
+        />
+      </center>
+
+      <p>
+        I then binarized the gradient magnitude by iterating through each
+        pixel—if its value was less than some threshold, I set it to 0. If it
+        was greater, I set it to 1. After some trial and error, I decided that a
+        threshold of 0.2 produced the cleanest edge image, as it results in a
+        relatively clear outline while minimizing noise.
+      </p>
+      <h3 class="subtitle">cameraman.jpg</h3>
+      <div class="image-container">
+        <div class="image">
+          <img src="out/cameraman_dx.jpg" width="270px" />
+          <p>Dx</p>
+        </div>
+        <div class="image">
+          <img src="out/cameraman_dy.jpg" width="270px" />
+          <p>Dy</p>
+        </div>
+        <div class="image">
+          <img src="out/cameraman_dx_dy.jpg" width="270px" />
+          <p>Gradient magnitude</p>
+        </div>
+        <div class="image">
+          <img src="out/cameraman_edge.jpg" width="270px" />
+          <p>Binarized (threshold = 0.2)</p>
+        </div>
+      </div>
+      <h3 class="subtitle">Part 1.2: Derivative of Gaussian Filter</h3>
+      <p>
+        To reduce the amount of background noise in the edge image, I convolved
+        the image with a Gaussian filter before repeating the steps from Part
+        1.1. The blurred image yielded an edge image with a thicker, smoother
+        outline and less stray pixels.
+      </p>
+      <h3 class="subtitle">cameraman.jpg</h3>
+      <div class="image-container">
+        <div class="image">
+          <img src="out/cameraman_dx_blur.jpg" width="270px" />
+          <p>Dx</p>
+        </div>
+        <div class="image">
+          <img src="out/cameraman_dy_blur.jpg" width="270px" />
+          <p>Dy</p>
+        </div>
+        <div class="image">
+          <img src="out/cameraman_dx_dy_blur.jpg" width="270px" />
+          <p>Gradient magnitude</p>
+        </div>
+        <div class="image">
+          <img src="out/cameraman_edge_blur.jpg" width="270px" />
+          <p>Binarized (threshold = 0.3)</p>
+        </div>
+      </div>
+
+      <p>
+        As a sanity check, I also convovled the Gaussian filter directly with Dx
+        and Dy to achieve the same results with less convolutions.
+      </p>
+
+      <h3 class="subtitle">cameraman.jpg</h3>
+      <div class="image-container">
+        <div class="image">
+          <img src="out/cameraman_gdx.jpg" width="270px" />
+          <p>Dx</p>
+        </div>
+        <div class="image">
+          <img src="out/cameraman_gdy.jpg" width="270px" />
+          <p>Dy</p>
+        </div>
+        <div class="image">
+          <img src="out/cameraman_gdx_gdy.jpg" width="270px" />
+          <p>Gradient magnitude</p>
+        </div>
+        <div class="image">
+          <img src="out/cameraman_edge_gdx_gdy.jpg" width="270px" />
+          <p>Binarized (threshold = 0.3)</p>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 50px">Section II: Fun with Frequencies</h2>
+
+      <h3 class="subtitle">Part 2.1: Image "Sharpening"</h3>
+      <p>
+        Next, I implemented the unsharp masking technique. To isolate the low
+        frequencies of an image, I convolved the image with a Gaussian filter.
+        To isolate the high frequencies, I subtracted the blurred image from the
+        original image. Finally, I combined the original image with the high
+        frequencies multiplied by an alpha, making the high frequencies more
+        prominent; this "sharpens" an image. I combined the steps into a single
+        convolution called the unsharp filter.
+      </p>
+
+      <h3 class="subtitle">taj.jpg</h3>
+      <div class="image-container">
+        <div class="image">
+          <img src="out/taj_alpha_0.jpg" width="360px" />
+          <p>Original (a = 0)</p>
+        </div>
+        <div class="image">
+          <img src="out/taj_low_freq.jpg" width="360px" />
+          <p>Low frequency</p>
+        </div>
+        <div class="image">
+          <img src="out/taj_high_freq.jpg" width="360px" />
+          <p>High frequency</p>
+        </div>
+        <div class="image">
+          <img src="out/taj_alpha_1.jpg" width="360px" />
+          <p>a = 1</p>
+        </div>
+        <div class="image">
+          <img src="out/taj_alpha_2.jpg" width="360px" />
+          <p>a = 2</p>
+        </div>
+        <div class="image">
+          <img src="out/taj_alpha_3.jpg" width="360px" />
+          <p>a = 3</p>
+        </div>
+      </div>
+
+      <h3 class="subtitle">dog.jpg</h3>
+      <div class="image-container">
+        <div class="image">
+          <img src="out/dog_alpha_0.jpg" width="360px" />
+          <p>Original (a = 0)</p>
+        </div>
+        <div class="image">
+          <img src="out/dog_low_freq.jpg" width="360px" />
+          <p>Low frequency</p>
+        </div>
+        <div class="image">
+          <img src="out/dog_high_freq.jpg" width="360px" />
+          <p>High frequency</p>
+        </div>
+        <div class="image">
+          <img src="out/dog_alpha_1.jpg" width="360px" />
+          <p>a = 1</p>
+        </div>
+        <div class="image">
+          <img src="out/dog_alpha_2.jpg" width="360px" />
+          <p>a = 2</p>
+        </div>
+        <div class="image">
+          <img src="out/dog_alpha_3.jpg" width="360px" />
+          <p>a = 3</p>
+        </div>
+      </div>
+
+      <h3 class="subtitle">moodeng.jpg</h3>
+      <div class="image-container">
+        <div class="image">
+          <img src="out/moodeng_alpha_0.jpg" width="360px" />
+          <p>Original (a = 0)</p>
+        </div>
+        <div class="image">
+          <img src="out/moodeng_low_freq.jpg" width="360px" />
+          <p>Low frequency</p>
+        </div>
+        <div class="image">
+          <img src="out/moodeng_high_freq.jpg" width="360px" />
+          <p>High frequency</p>
+        </div>
+        <div class="image">
+          <img src="out/moodeng_alpha_1.jpg" width="360px" />
+          <p>a = 1</p>
+        </div>
+        <div class="image">
+          <img src="out/moodeng_alpha_2.jpg" width="360px" />
+          <p>a = 2</p>
+        </div>
+        <div class="image">
+          <img src="out/moodeng_alpha_3.jpg" width="360px" />
+          <p>a = 3</p>
+        </div>
+      </div>
+
+      <p>
+        I also experimented with blurring images beforehand. Although sharpening
+        captured most of the original details, the result appears grainier than
+        desired.
+      </p>
+      <h3 class="subtitle">frog.jpg</h3>
+      <div class="image-container">
+        <div class="image">
+          <img src="data/frog.jpg" width="360px" />
+          <p>Original (a = 0)</p>
+        </div>
+        <div class="image">
+          <img src="out/frog_blurred.jpg" width="360px" />
+          <p>Blurred</p>
+        </div>
+        <div class="image">
+          <img src="out/frog_alpha_3.jpg" width="360px" />
+          <p>Sharpened (a = 3)</p>
+        </div>
+      </div>
+
+      <h3 class="subtitle">Part 2.2: Hybrid Images</h3>
+      <p>
+        I also implemented image hybridization by blending the high frequencies
+        of one image with the low frequencies of another. Hybrid images are
+        images that are perceived differently based on the viewing distance—the
+        high frequencies are more visible up close, while the low frequencies
+        are more visible at a distance.
+      </p>
+
+      <p>
+        Similar to my approach in Part 2.1, I retained the low frequencies of an
+        image by convolving it with a Gaussian filter. I then obtained the high
+        frequencies of another image by subtracting its low frequencies from the
+        original. Taking the average of these two images creates the final
+        result.
+      </p>
+
+      <div class="image-container">
+        <div class="image">
+          <h3>DerekPicture.jpg</h3>
+          <img src="data/DerekPicture.jpg" height="360px" />
+          <p>Low frequency</p>
+        </div>
+        <div class="image">
+          <h3>nutmeg.jpg</h3>
+          <img src="data/nutmeg.jpg" width="360px" />
+          <p>High frequency</p>
+        </div>
+        <div class="image">
+          <h3>Derek_nutmeg_final.jpg</h3>
+          <img src="out/Derek_nutmeg_final.jpg" height="360px" />
+          <p>Hybridized</p>
+        </div>
+      </div>
+
+      <div class="image-container">
+        <div class="image">
+          <h3>coccoon.jpg</h3>
+          <img src="data/coccoon.jpg" width="360px" />
+          <p>Low frequency</p>
+        </div>
+        <div class="image">
+          <h3>butterfly.jpg</h3>
+          <img src="data/butterfly.jpg" width="280px" />
+          <p>High frequency</p>
+        </div>
+        <div class="image">
+          <h3>butterfly_coccoon_final.jpg</h3>
+          <img src="out/butterfly_coccoon_final.jpg" width="360px" />
+          <p>Hybridized</p>
+        </div>
+      </div>
+
+      <h3 class="subtitle">Favorite Case</h3>
+
+      <div class="image-container">
+        <div class="image">
+          <h3>cat.jpg</h3>
+          <img src="data/cat.jpg" width="360px" />
+          <p>Low frequency</p>
+        </div>
+        <div class="image">
+          <h3>skull.jpg</h3>
+          <img src="data/skull.jpg" width="300px" />
+          <p>High frequency</p>
+        </div>
+        <div class="image">
+          <h3>skull_cat_final.jpg</h3>
+          <img src="out/skull_cat_final.jpg" width="360px" />
+          <p>Hybridized</p>
+        </div>
+      </div>
+
+      <h3 class="subtitle">Frequency Analysis</h3>
+
+      <div class="image-container">
+        <div class="image">
+          <img src="data/cat.jpg" width="360px" />
+          <p>Original</p>
+        </div>
+        <div class="image">
+          <img src="out/cat_fft.png" width="360px" />
+          <p>Fourier transform</p>
+        </div>
+        <div class="image">
+          <img src="out/cat_aligned_fft.png" width="360px" />
+          <p>Fourier transform (aligned)</p>
+        </div>
+      </div>
+
+      <div class="image-container">
+        <div class="image">
+          <img src="data/skull.jpg" width="300px" />
+          <p>Original</p>
+        </div>
+        <div class="image">
+          <img src="out/skull_fft.png" width="360px" />
+          <p>Fourier transform</p>
+        </div>
+        <div class="image">
+          <img src="out/skull_aligned_fft.png" width="360px" />
+          <p>Fourier transform (aligned)</p>
+        </div>
+      </div>
+
+      <div class="image-container">
+        <div class="image">
+          <img src="out/skull_cat_final.jpg" width="360px" />
+          <p>Original</p>
+        </div>
+        <div class="image">
+          <img src="out/skull_cat_fft.png" width="360px" />
+          <p>Fourier transform</p>
+        </div>
+      </div>
+
+      <h3 class="subtitle">Failure Case</h3>
+      <p>
+        I had some difficulties blending jinx.jpg with powder.jpg. Jinx's eye is
+        overpowering even at a distance, and it's hard to differentiate between
+        Jinx and Powder's hair up close. This may be due to the stylized nature
+        of the images.
+      </p>
+
+      <div class="image-container">
+        <div class="image">
+          <h3>powder.jpg</h3>
+          <img src="data/powder.jpg" height="200px" />
+          <p>Low frequency</p>
+        </div>
+        <div class="image">
+          <h3>jinx.jpg</h3>
+          <img src="data/jinx.jpg" height="200px" />
+          <p>High frequency</p>
+        </div>
+        <div class="image">
+          <h3>jinx_powder_final.jpg</h3>
+          <img src="out/jinx_powder_final.jpg" height="200px" />
+          <p>Hybridized</p>
+        </div>
+      </div>
+
+      <h3 class="subtitle">Part 2.3: Gaussian and Laplacian Stacks</h3>
+      <p>
+        In preparation for multiresolution blending, I implemented Gaussian and
+        Laplacian stacks. To create the Gaussian stack, I start with the
+        original image; at each level, I double the sigma value, creating a
+        stronger Gaussian filter to convolve the image with. The Laplacian stack
+        is simply the difference between successive levels of the Gaussian
+        stack. I also recreated Figure 3.42 from the textbook using a simple
+        vertical spline.
+      </p>
+
+      <h3 class="subtitle">apple.jpeg (Gaussian Stack)</h3>
+      <div class="image-container">
+        <div class="image">
+          <img src="out/apple_gaussian_0.jpg" width="210px" />
+          <p>Level 0</p>
+        </div>
+        <div class="image">
+          <img src="out/apple_gaussian_1.jpg" width="210px" />
+          <p>Level 1</p>
+        </div>
+        <div class="image">
+          <img src="out/apple_gaussian_2.jpg" width="210px" />
+          <p>Level 2</p>
+        </div>
+        <div class="image">
+          <img src="out/apple_gaussian_3.jpg" width="210px" />
+          <p>Level 3</p>
+        </div>
+        <div class="image">
+          <img src="out/apple_gaussian_4.jpg" width="210px" />
+          <p>Level 4</p>
+        </div>
+      </div>
+
+      <h3 class="subtitle">apple.jpeg (Laplacian Stack)</h3>
+      <div class="image-container">
+        <div class="image">
+          <img src="out/apple_laplacian_0.jpg" width="210px" />
+          <p>Level 0</p>
+        </div>
+        <div class="image">
+          <img src="out/apple_laplacian_1.jpg" width="210px" />
+          <p>Level 1</p>
+        </div>
+        <div class="image">
+          <img src="out/apple_laplacian_2.jpg" width="210px" />
+          <p>Level 2</p>
+        </div>
+        <div class="image">
+          <img src="out/apple_laplacian_3.jpg" width="210px" />
+          <p>Level 3</p>
+        </div>
+        <div class="image">
+          <img src="out/apple_laplacian_4.jpg" width="210px" />
+          <p>Level 4</p>
+        </div>
+      </div>
+
+      <h3 class="subtitle">orange.jpeg (Gaussian Stack)</h3>
+      <div class="image-container">
+        <div class="image">
+          <img src="out/orange_gaussian_0.jpg" width="210px" />
+          <p>Level 0</p>
+        </div>
+        <div class="image">
+          <img src="out/orange_gaussian_1.jpg" width="210px" />
+          <p>Level 1</p>
+        </div>
+        <div class="image">
+          <img src="out/orange_gaussian_2.jpg" width="210px" />
+          <p>Level 2</p>
+        </div>
+        <div class="image">
+          <img src="out/orange_gaussian_3.jpg" width="210px" />
+          <p>Level 3</p>
+        </div>
+        <div class="image">
+          <img src="out/orange_gaussian_4.jpg" width="210px" />
+          <p>Level 4</p>
+        </div>
+      </div>
+
+      <h3 class="subtitle">orange.jpeg (Laplacian Stack)</h3>
+      <div class="image-container">
+        <div class="image">
+          <img src="out/orange_laplacian_0.jpg" width="210px" />
+          <p>Level 0</p>
+        </div>
+        <div class="image">
+          <img src="out/orange_laplacian_1.jpg" width="210px" />
+          <p>Level 1</p>
+        </div>
+        <div class="image">
+          <img src="out/orange_laplacian_2.jpg" width="210px" />
+          <p>Level 2</p>
+        </div>
+        <div class="image">
+          <img src="out/orange_laplacian_3.jpg" width="210px" />
+          <p>Level 3</p>
+        </div>
+        <div class="image">
+          <img src="out/orange_laplacian_4.jpg" width="210px" />
+          <p>Level 4</p>
+        </div>
+      </div>
+
+      <h3 class="subtitle">Figure 3.42</h3>
+      <div class="image-container">
+        <p style="margin-right: 120px">Level 0</p>
+        <div class="image">
+          <img src="out/apple_masked_0.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/orange_masked_0.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/orapple_0.jpg" width="280px" />
+        </div>
+      </div>
+
+      <div class="image-container">
+        <p style="margin-right: 120px">Level 1</p>
+        <div class="image">
+          <img src="out/apple_masked_1.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/orange_masked_1.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/orapple_1.jpg" width="280px" />
+        </div>
+      </div>
+
+      <div class="image-container">
+        <p style="margin-right: 120px">Level 2</p>
+        <div class="image">
+          <img src="out/apple_masked_2.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/orange_masked_2.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/orapple_2.jpg" width="280px" />
+        </div>
+      </div>
+
+      <div class="image-container">
+        <p style="margin-right: 120px">Level 3</p>
+        <div class="image">
+          <img src="out/apple_masked_3.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/orange_masked_3.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/orapple_3.jpg" width="280px" />
+        </div>
+      </div>
+
+      <div class="image-container">
+        <p style="margin-right: 120px">Level 4</p>
+        <div class="image">
+          <img src="out/apple_masked_4.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/orange_masked_4.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/orapple_4.jpg" width="280px" />
+        </div>
+      </div>
+
+      <div class="image-container">
+        <p style="margin-right: 100px">Collapsed</p>
+        <div class="image">
+          <img src="out/apple_final.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/orange_final.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/orapple_final.jpg" width="280px" />
+        </div>
+      </div>
+
+      <h3 class="subtitle">Part 2.4: Multiresolution Blending</h3>
+      <p>
+        Finally, I blended some images of my own using a horizontal spline and a
+        custom spline.
+      </p>
+
+      <center>
+        <img
+          src="out/snow_northern_lights_final.jpg"
+          align="middle"
+          width="600px"
+          style="margin-top: 40px"
+        />
+      </center>
+
+      <div class="image-container" style="margin-bottom: 50px">
+        <div class="image">
+          <h3 class="subtitle">northern_lights.jpg</h3>
+          <img src="data/northern_lights.jpg" width="360px" />
+        </div>
+        <div class="image">
+          <h3 class="subtitle">snow.jpg</h3>
+          <img src="data/snow.jpg" width="360px" />
+        </div>
+        <div class="image">
+          <h3 class="subtitle">Binary mask</h3>
+          <img src="data/horizontal_spline.jpg" width="360px" />
+        </div>
+      </div>
+
+      <div class="image-container">
+        <p style="margin-right: 120px">Level 0</p>
+        <div class="image">
+          <img src="out/northern_lights_laplacian_0.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/snow_laplacian_0.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/snow_northern_lights_0.jpg" width="280px" />
+        </div>
+      </div>
+
+      <div class="image-container">
+        <p style="margin-right: 120px">Level 2</p>
+        <div class="image">
+          <img src="out/northern_lights_laplacian_2.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/snow_laplacian_2.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/snow_northern_lights_2.jpg" width="280px" />
+        </div>
+      </div>
+
+      <div class="image-container">
+        <p style="margin-right: 120px">Level 4</p>
+        <div class="image">
+          <img src="out/northern_lights_laplacian_4.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/snow_laplacian_4.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/snow_northern_lights_4.jpg" width="280px" />
+        </div>
+      </div>
+
+      <div class="image-container">
+        <p style="margin-right: 100px">Collapsed</p>
+        <div class="image">
+          <img src="out/northern_lights_final.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/snow_final.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/snow_northern_lights_final.jpg" width="280px" />
+        </div>
+      </div>
+
+      <center>
+        <img
+          src="out/miffy_field_final.jpg"
+          align="middle"
+          width="600px"
+          style="margin-top: 40px"
+        />
+      </center>
+
+      <div class="image-container" style="margin-bottom: 50px">
+        <div class="image">
+          <h3 class="subtitle">miffy.jpg</h3>
+          <img src="data/miffy.jpg" width="360px" />
+        </div>
+        <div class="image">
+          <h3 class="subtitle">field.jpg</h3>
+          <img src="data/field.jpg" width="360px" />
+        </div>
+        <div class="image">
+          <h3 class="subtitle">miffy_spline.jpg</h3>
+          <img src="data/miffy_spline.jpg" width="360px" />
+        </div>
+      </div>
+
+      <div class="image-container">
+        <p style="margin-right: 120px">Level 0</p>
+        <div class="image">
+          <img src="out/miffy_laplacian_0.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/field_laplacian_0.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/miffy_field_0.jpg" width="280px" />
+        </div>
+      </div>
+
+      <div class="image-container">
+        <p style="margin-right: 120px">Level 2</p>
+        <div class="image">
+          <img src="out/miffy_laplacian_2.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/field_laplacian_2.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/miffy_field_2.jpg" width="280px" />
+        </div>
+      </div>
+
+      <div class="image-container">
+        <p style="margin-right: 120px">Level 4</p>
+        <div class="image">
+          <img src="out/miffy_laplacian_4.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/field_laplacian_4.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/miffy_field_4.jpg" width="280px" />
+        </div>
+      </div>
+
+      <div class="image-container">
+        <p style="margin-right: 100px">Collapsed</p>
+        <div class="image">
+          <img src="out/miffy_final.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/field_final.jpg" width="280px" />
+        </div>
+        <div class="image">
+          <img src="out/miffy_field_final.jpg" width="280px" />
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
