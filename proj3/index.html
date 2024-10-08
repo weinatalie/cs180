@@ -1,0 +1,649 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <style>
+      body {
+        padding: 60px;
+        width: 1000px;
+        margin: auto;
+        text-align: left;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        font-weight: 400;
+        color: #333333;
+      }
+      p {
+        font-family: "Open Sans", sans-serif;
+      }
+      .image-container {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .title {
+        font-size: 36px;
+        font-weight: 700;
+      }
+      .subtitle {
+        font-size: 20px;
+        font-weight: 600;
+        margin-top: 16px;
+      }
+      h2 {
+        font-weight: 600;
+      }
+      h3 {
+        font-size: 20px;
+      }
+      .image {
+        flex: 1;
+        text-align: center;
+      }
+      .container {
+        display: flex;
+        align-items: flex-start;
+      }
+      .image-caption {
+        font-size: 14px;
+        color: #808080;
+      }
+    </style>
+    <title>Face Morphing</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700;900&family=Source+Sans:wght@100;300;400;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <h1 class="title" , style="font-size: 32px">
+      CS180: Intro to Computer Vision and Computational Photography
+    </h1>
+    <h1 class="title">Face Morphing</h1>
+    <h2 class="subtitle">Natalie Wei (3037990373)</h2>
+
+    <div>
+      <h2 style="margin-top: 40px; font-size: 28px">Overview</h2>
+      <p>
+        My goal for this project was to produce successful “face morphs” between
+        different people. Throughout the project, I utilized techniques like
+        Delaunay triangulation, affine transformation, and interpolation to
+        create face morph animations, compute the mean face of a population, and
+        develop a caricature of my own face.
+      </p>
+
+      <h2 style="margin-top: 40px; font-size: 28px">
+        Section I: Defining Correspondences
+      </h2>
+
+      <p>
+        I chose to morph these two photographs of Andrew Garfield and Jesse
+        Eisenberg, both taken by Martin Schoeller.
+      </p>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 40px;
+          margin-bottom: 40px;
+        "
+      >
+        <img src="data/andrew_garfield.jpg" align="middle" width="400px" />
+
+        <img
+          src="data/jesse_eisenberg.jpg"
+          align="middle"
+          width="400px"
+          style="margin-left: 30px"
+        />
+      </div>
+
+      <p>
+        To start, I used the
+        <a href="https://cal-cs180.github.io/fa23/hw/proj3/tool.html"
+          >provided tool</a
+        >
+        to select points corresponding to key facial features like the eyes,
+        nose, mouth, and face shape; I added additional points in the corners of
+        the images. I generated Delaunay triangulations based on 120
+        correspondence points from each image. I also averaged the two sets of
+        correspondence points to find the midway shape, the triangulation of
+        which I'll use for the morph sequence.
+      </p>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img
+            src="data/andrew_garfield_tri.png"
+            align="middle"
+            width="425px"
+          />
+          <p class="image-caption">
+            Delaunay triangulation of Andrew Garfield.
+          </p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="data/jesse_eisenberg_tri.png"
+            align="middle"
+            width="425px"
+            style="margin-left: 6px"
+          />
+          <p class="image-caption">
+            Delaunay triangulation of Jesse Eisenberg.
+          </p>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 40px; font-size: 28px">
+        Section II: Computing the "Mid-Way" Face
+      </h2>
+
+      <p>
+        Equipped with triangulations for the source and target images, I was
+        ready to compute the midway face. Treating them as target triangles, I
+        iterated through each triangle from the midway triangulation and
+        calculated the affine transformation matrix mapping source vertices to
+        their corresponding target vertices.
+      </p>
+
+      <p>
+        Since direct warping can leave gaps, I performed inverse warping by
+        using the inverse transformation matrix to map the target triangles to
+        the source triangles. Generating a polygon mask for each triangle
+        allowed me to warp all of its pixels at once instead of iterating
+        through them manually.
+      </p>
+
+      <p>
+        Finally, given the warped triangles, I used nearest neighbor sampling to
+        populate the pixels of the warped image with the corresponding colors
+        from the original; cross-dissolving the two images produces the final
+        midway face.
+      </p>
+
+      <p>
+        I only included correspondence points on their faces, so there’s a tiny
+        bit of artifacting in the warped image of Andrew Garfield. However, the
+        midway face still does a pretty good job of blending both Andrew
+        Garfield and Jesse Eisenberg’s features, most notably the eyes, chin,
+        and mouth.
+      </p>
+
+      <div class="image-container" style="margin-top: 40px">
+        <div class="image">
+          <img src="out/andrew_garfield_midway.jpg" width="320px" />
+          <p class="image-caption">
+            Andrew Garfield warped to the midway shape.
+          </p>
+        </div>
+        <div class="image">
+          <img
+            src="out/andrew_garfield_jesse_eisenberg_midway.jpg"
+            width="320px"
+          />
+          <p class="image-caption">The final midway face.</p>
+        </div>
+        <div class="image">
+          <img src="out/jesse_eisenberg_midway.jpg" width="320px" />
+          <p class="image-caption">
+            Jesse Eisenberg warped to the midway shape.
+          </p>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: row; margin-top: 60px">
+        <div style="display: flex; flex-direction: column">
+          <h2 style="font-size: 28px">Section III: The Morph Sequence</h2>
+          <p>
+            warp_frac represents the weight each image has on the midway shape,
+            while dissolve_frac represents the weight each image has in the
+            cross-dissolve. To create my morph sequence, I repeated the process
+            from Part II with weights in the range of [0, 1]. I created the
+            final .gif to the right using 51 distinct frames to smoothly morph
+            Jesse Eisenberg into Andrew Garfield.
+          </p>
+
+          <p>
+            While the face morph itself looks smooth, my starting images have
+            different hairstyles, clothes, etc., making certain aspects of the
+            transformation less seamless.
+          </p>
+        </div>
+        <div class="image" , style="margin-left: 120px">
+          <img src="out/andrew_garfield_jesse_eisenberg.gif" width="360px" />
+          <p class="image-caption">The morph sequence .gif.</p>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 40px; font-size: 28px">
+        Section IV: The "Mean Face" of a Population
+      </h2>
+
+      <p>
+        I applied techniques from the previous parts at a larger scale by
+        computing the average face from the Danes dataset, which contains 37
+        images. I first parsed through the .asf files to obtain the
+        correspondence points from each image, then averaged all of the points
+        together to obtain the average shape overall. Following my procedure
+        from Part II, I warped each face to the average shape and
+        cross-dissolved all of the results together to produce the final
+        composite face. I also took the average faces from the male (30 photos)
+        and female (7 photos) subsets, and found that the average male face
+        overpowers the overall average.
+      </p>
+
+      <h3 style="margin-top: 40px">IMM Face Database</h3>
+
+      <center style="margin-bottom: 20px">
+        <img
+          src="out/danes_average.jpg"
+          align="middle"
+          height="320px"
+          style="margin-top: 40px"
+        />
+        <p class="image-caption">The average Dane.</p>
+      </center>
+
+      <div style="display: flex; justify-content: center; flex-wrap: wrap">
+        <div style="text-align: center; margin-top: 10px">
+          <img
+            src="data/danes_females/12-1f.bmp"
+            align="middle"
+            width="320px"
+          />
+          <p class="image-caption">Original female.</p>
+        </div>
+
+        <div style="text-align: center; margin-top: 10px">
+          <img
+            src="data/danes_females/08-1f.bmp"
+            align="middle"
+            width="320px"
+            style="margin-left: 10px"
+          />
+          <p class="image-caption">Original female.</p>
+        </div>
+
+        <div style="text-align: center; margin-top: 10px">
+          <img
+            src="data/danes_males/19-1m.bmp"
+            align="middle"
+            width="320px"
+            style="margin-left: 10px"
+          />
+          <p class="image-caption">Original male.</p>
+        </div>
+
+        <div style="text-align: center; margin-top: 10px">
+          <img
+            src="out/female_1_danes.jpg"
+            align="middle"
+            width="320px"
+            style="margin-left: 10px"
+          />
+          <p class="image-caption">Warped to the average Dane.</p>
+        </div>
+
+        <div style="text-align: center; margin-top: 10px">
+          <img
+            src="out/female_2_danes.jpg"
+            align="middle"
+            width="320px"
+            style="margin-left: 10px"
+          />
+          <p class="image-caption">Warped to the average Dane.</p>
+        </div>
+
+        <div style="text-align: center; margin-top: 10px">
+          <img
+            src="out/male_2_danes.jpg"
+            align="middle"
+            width="320px"
+            style="margin-left: 10px"
+          />
+          <p class="image-caption">Warped to the average Dane.</p>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 40px">IMM Face Database (Female)</h3>
+
+      <div style="display: flex; flex-direction: row; align-items: center">
+        <div
+          style="
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 40px;
+          "
+        >
+          <div style="text-align: center">
+            <img
+              src="data/danes_females/12-1f.bmp"
+              align="middle"
+              width="260px"
+            />
+            <p class="image-caption">Original female.</p>
+          </div>
+
+          <div style="text-align: center">
+            <img
+              src="out/female_1_females.jpg"
+              align="middle"
+              width="260px"
+              style="margin-left: 18px"
+            />
+            <p class="image-caption">Warped to the average female.</p>
+          </div>
+
+          <div style="text-align: center; margin-top: 10px">
+            <img
+              src="data/danes_females/08-1f.bmp"
+              align="middle"
+              width="260px"
+            />
+            <p class="image-caption">Original female.</p>
+          </div>
+
+          <div style="text-align: center; margin-top: 10px">
+            <img
+              src="out/female_2_females.jpg"
+              align="middle"
+              width="260px"
+              style="margin-left: 18px"
+            />
+            <p class="image-caption">Warped to the average female.</p>
+          </div>
+        </div>
+
+        <center>
+          <img
+            src="out/danes_average_females.jpg"
+            align="middle"
+            height="320px"
+          />
+          <p class="image-caption">The average female Dane.</p>
+        </center>
+      </div>
+
+      <h3 style="margin-top: 40px">IMM Face Database (Male)</h3>
+
+      <div style="display: flex; flex-direction: row; align-items: center">
+        <div
+          style="
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 40px;
+            margin-bottom: 40px;
+          "
+        >
+          <div style="text-align: center">
+            <img
+              src="data/danes_males/01-1m.bmp"
+              align="middle"
+              width="260px"
+            />
+            <p class="image-caption">Original male.</p>
+          </div>
+
+          <div style="text-align: center">
+            <img
+              src="out/male_1_males.jpg"
+              align="middle"
+              width="260px"
+              style="margin-left: 18px"
+            />
+            <p class="image-caption">Warped to the average male.</p>
+          </div>
+
+          <div style="text-align: center; margin-top: 10px">
+            <img
+              src="data/danes_males/19-1m.bmp"
+              align="middle"
+              width="260px"
+            />
+            <p class="image-caption">Original male.</p>
+          </div>
+
+          <div style="text-align: center; margin-top: 10px">
+            <img
+              src="out/male_2_males.jpg"
+              align="middle"
+              width="260px"
+              style="margin-left: 18px"
+            />
+            <p class="image-caption">Warped to the average male.</p>
+          </div>
+        </div>
+
+        <center style="margin-bottom: 50px">
+          <img
+            src="out/danes_average_males.jpg"
+            align="middle"
+            height="320px"
+            style="margin-top: 25px"
+          />
+          <p class="image-caption">The average male Dane.</p>
+        </center>
+      </div>
+
+      <p>
+        Finally, I warped my own face to the average shapes and vice versa.
+        Though warping my face didn't go so well, the average faces mapped
+        relatively well to my face shape.
+      </p>
+
+      <center>
+        <img
+          src="data/natalie.jpg"
+          align="middle"
+          height="320px"
+          style="margin-top: 40px"
+        />
+        <p class="image-caption">My face.</p>
+      </center>
+
+      <div class="image-container" style="margin-top: 10px">
+        <div class="image">
+          <img src="out/natalie_danes.jpg" width="320px" />
+          <p class="image-caption">My face warped to the average Dane.</p>
+        </div>
+        <div class="image">
+          <img src="out/natalie_females.jpg" width="320px" />
+          <p class="image-caption">My face warped to the average female.</p>
+        </div>
+        <div class="image">
+          <img src="out/natalie_males.jpg" width="320px" />
+          <p class="image-caption">My face warped to the average male.</p>
+        </div>
+      </div>
+      <div class="image-container" style="margin-top: 10px">
+        <div class="image">
+          <img src="out/danes_natalie.jpg" width="320px" />
+          <p class="image-caption">The average Dane warped to my face.</p>
+        </div>
+        <div class="image">
+          <img src="out/females_natalie.jpg" width="320px" />
+          <p class="image-caption">The average female warped to my face.</p>
+        </div>
+        <div class="image">
+          <img src="out/males_natalie.jpg" width="320px" />
+          <p class="image-caption">The average male warped to my face.</p>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 40px; font-size: 28px">
+        Section V: Caricatures: Extrapolating from the Mean
+      </h2>
+
+      <p>
+        I can also produce caricatures of my own face by extrapolating from the
+        population mean obtained in the previous part. To do so, I warp my face
+        to the shape determined by the formula
+        <i>alpha * mean_face + (1 - alpha) * my_face</i>, where alpha is a
+        constant value that represents the intensity of my unique features. A
+        negative alpha value accentuates my facial features, while a positive
+        alpha value decreases the strength of my own features and increases
+        those of the average.
+      </p>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 40px;
+        "
+      >
+        <div align="middle">
+          <img src="out/caricature_-1.5.jpg" width="320px" />
+          <p class="image-caption">alpha = -1.5</p>
+        </div>
+        <div align="middle" style="margin-left: 12px">
+          <img src="out/caricature_-1.jpg" width="320px" />
+          <p class="image-caption">alpha = -1</p>
+        </div>
+        <div align="middle" style="margin-left: 12px">
+          <img src="out/caricature_-0.5.jpg" width="320px" />
+          <p class="image-caption">alpha = -0.5</p>
+        </div>
+        <div align="middle">
+          <img src="out/caricature_0.5.jpg" width="320px" />
+          <p class="image-caption">alpha = 0.5</p>
+        </div>
+        <div align="middle" style="margin-left: 12px">
+          <img src="out/caricature_1.jpg" width="320px" />
+          <p class="image-caption">alpha = 1</p>
+        </div>
+        <div align="middle" style="margin-left: 12px">
+          <img src="out/caricature_1.5.jpg" width="320px" />
+          <p class="image-caption">alpha = 1.5</p>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 40px; font-size: 28px">
+        Section VI: Bells and Whistles
+      </h2>
+
+      <h3>Morphing Music Video on a Theme</h3>
+
+      <p>
+        I was inspired by the film Everything Everywhere All At Once to create a
+        morphing music video between 12 different multiverse variants of Evelyn.
+        I selected 38 correspondence points for each image, created morph
+        sequences between different pairs of images, and combined the sequences
+        to create the final video linked below, which consists of 286 unique
+        frames.
+      </p>
+
+      <center>
+        <iframe
+          width="480"
+          height="270"
+          src="https://www.youtube.com/embed/-nICbmw9Ruc?si=p6oPGyOqfzDz9lkb"
+          style="margin-top: 40px; margin-bottom: 40px"
+        >
+        </iframe>
+      </center>
+
+      <h3>Morphing Music Video With Classmates</h3>
+
+      <p>
+        I participated in a morphing music video with Rohan Gulati, Shuai Zhou,
+        Kelly Yeh, Jaewon Lee, and Jennifer Yin, other students enrolled in this
+        class. Each of us selected 43 correspondence points for our own face and
+        created morph sequences between our face and everyone else's; Jaewon Lee
+        then compiled all of our morphs together. The entire sequence consists
+        of 11916 frames.
+      </p>
+
+      <center>
+        <iframe
+          width="360"
+          height="360"
+          src="https://www.youtube.com/embed/-nICbmw9Ruc?si=p6oPGyOqfzDz9lkb"
+          style="margin-top: 40px; margin-bottom: 40px"
+        >
+        </iframe>
+      </center>
+
+      <h3>Changing Gender</h3>
+      <p>
+        Finally, I experimented with changing my gender based on the average
+        male face from
+        <a
+          href="https://pmsol3.wordpress.com/2009/10/10/world-of-facial-averages-east-southeast-asia-pacific-islander/"
+          >this</a
+        >
+        collection. I manually cropped and aligned the images, picked
+        correspondence points, and followed the procedure from previous parts to
+        morph my face to male. I created morphs using only the midway shape,
+        only the appearance, and both, which I think produced the best result.
+      </p>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 40px;
+        "
+      >
+        <div align="middle">
+          <img
+            src="data/natalie_cropped.jpg"
+            width="400px"
+            style="margin-right: 30px"
+          />
+          <p class="image-caption">My face.</p>
+        </div>
+        <div align="middle">
+          <img src="data/chineseaverageman.jpg" width="400px" />
+          <p class="image-caption">Average Chinese man.</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 40px;
+        "
+      >
+        <div align="middle">
+          <img src="out/natalie_chineseaverageman_shape.jpg" width="320px" />
+          <p class="image-caption">My face morphed by shape.</p>
+        </div>
+        <div align="middle">
+          <img
+            src="out/natalie_chineseaverageman_appearance.jpg"
+            width="320px"
+            style="margin-left: 12px"
+            ˝
+          />
+          <p class="image-caption">My face morphed by appearance.</p>
+        </div>
+        <div align="middle">
+          <img
+            src="out/natalie_chineseaverageman_both.jpg"
+            width="320px"
+            style="margin-left: 12px"
+          />
+          <p class="image-caption">My face morphed by both.</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
