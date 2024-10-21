@@ -1,0 +1,679 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <style>
+      body {
+        padding: 60px;
+        width: 1000px;
+        margin: auto;
+        text-align: left;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        font-weight: 400;
+        color: #333333;
+      }
+      p {
+        font-family: "Open Sans", sans-serif;
+      }
+      .image-container {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .title {
+        font-size: 36px;
+        font-weight: 700;
+      }
+      .subtitle {
+        font-size: 20px;
+        font-weight: 600;
+        margin-top: 16px;
+      }
+      h2 {
+        font-weight: 600;
+      }
+      h3 {
+        font-size: 20px;
+      }
+      .image {
+        flex: 1;
+        text-align: center;
+      }
+      .container {
+        display: flex;
+        align-items: flex-start;
+      }
+      .image-caption {
+        font-size: 14px;
+        color: #808080;
+      }
+    </style>
+    <title>(Auto)Stitching Photo Mosaics</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700;900&family=Source+Sans:wght@100;300;400;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <h1 class="title" , style="font-size: 32px">
+      CS180: Intro to Computer Vision and Computational Photography
+    </h1>
+    <h1 class="title">(Auto)Stitching Photo Mosaics</h1>
+    <h2 class="subtitle">Natalie Wei (3037990373)</h2>
+
+    <div>
+      <h2 style="margin-top: 40px; font-size: 28px">Overview</h2>
+      <p>
+        My goal for this project was to leverage image warping, registering,
+        resampling, and compositing for visually interesting applications such
+        as image rectification and image mosaics.
+      </p>
+
+      <h2 style="margin-top: 40px; font-size: 28px">
+        Section I: Shoot the Pictures
+      </h2>
+
+      <p>
+        I took several pairs of images to stitch together and selected key
+        points between shared features using the
+        <a href="https://cal-cs180.github.io/fa23/hw/proj3/tool.html"
+          >provided tool</a
+        >. To ensure that each image pair contained a projective transform, I
+        fixed the center of projection while varying the camera angle.
+      </p>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="data/t_rex_left.jpg" align="middle" width="425px" />
+          <p class="image-caption">A T-Rex skeleton (left).</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="data/t_rex_right.jpg"
+            align="middle"
+            width="425px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">A T-Rex skeleton (right).</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="data/t_rex_left_points.jpg" align="middle" width="320px" />
+          <p class="image-caption">The correspondence points.</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="data/t_rex_right_points.jpg"
+            align="middle"
+            width="320px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">The correspondence points.</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="data/balcony_left.jpg" align="middle" width="425px" />
+          <p class="image-caption">My balcony (left).</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="data/balcony_right.jpg"
+            align="middle"
+            width="425px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">My balcony (right).</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img
+            src="data/balcony_left_points.jpg"
+            align="middle"
+            width="360px"
+          />
+          <p class="image-caption">The correspondence points.</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="data/balcony_right_points.jpg"
+            align="middle"
+            width="360px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">The correspondence points.</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="data/skull_left.jpg" align="middle" width="425px" />
+          <p class="image-caption">A Parasaurolophus skull (left).</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="data/skull_right.jpg"
+            align="middle"
+            width="425px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">A Parasaurolophus skull (right).</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="data/skull_left_points.jpg" align="middle" width="360px" />
+          <p class="image-caption">The correspondence points.</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="data/skull_right_points.jpg"
+            align="middle"
+            width="360px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">The correspondence points.</p>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 40px; font-size: 28px">
+        Section II: Recover Homographies
+      </h2>
+
+      <p>
+        Given at least four sets of points from each, I can compute the
+        homography between two images by finding the solution to the following
+        system of equations:
+      </p>
+
+      <center>
+        <div style="text-align: center">
+          <img
+            src="data/system_of_equations.png"
+            align="middle"
+            width="1000px"
+          />
+        </div>
+      </center>
+
+      <p>
+        The system can be solved as follows on the left. In the case that I’m
+        using more than four sets of points, the system becomes overdetermined
+        and can be solved using the least squares method on the right:
+      </p>
+
+      <center>
+        <div style="text-align: center">
+          <img src="data/solution.png" align="middle" width="400px" />
+        </div>
+      </center>
+
+      <p>
+        I can now construct the homography as the following 3x3 matrix using the
+        obtained coefficients:
+      </p>
+
+      <center>
+        <div style="text-align: center">
+          <img src="data/homography.png" align="middle" width="280px" />
+        </div>
+      </center>
+
+      <p>
+        Finally, to warp the image, I apply the homography to homogenized sets
+        of coordinates and scale the resulting coordinates by <i>w</i> :
+      </p>
+
+      <center>
+        <div style="text-align: center">
+          <img src="data/scaling.png" align="middle" width="320px" />
+        </div>
+      </center>
+
+      <h2 style="margin-top: 40px; font-size: 28px">
+        Section III: Warp the Images
+      </h2>
+
+      <h3 style="margin-top: 40px">Image Rectification</h3>
+
+      <p>
+        To test my implementation, I rectified some images by mapping a warped
+        surface to a flat rectangular plane. First, I selected key points at
+        each corner of the surface I wanted to rectify, then calculated the
+        homography from the source points to the points of the desired plane. To
+        determine the bounds of the rectified image, I warped the bounds of the
+        source image then found the mask contained by the bounds.
+      </p>
+
+      <p>
+        I performed inverse warping by using the inverse homography to map the
+        mask back to the source image. Finally, I used nearest neighbor
+        interpolation to populate the pixels of the rectified image based on the
+        source image.
+      </p>
+
+      <p>
+        As you can see in the last result, this method doesn't always succeed in
+        emulating real-life perspective.
+      </p>
+
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="data/yifang.jpg" align="middle" width="400px" />
+          <p class="image-caption">A Yi Fang sign.</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/yifang.jpg"
+            align="middle"
+            width="400px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">The rectified sign.</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="data/pokemon.jpg" align="middle" width="400px" />
+          <p class="image-caption">A Pokémon poster.</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/pokemon.jpg"
+            align="middle"
+            width="400px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">The rectified poster.</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 50px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="data/lantern.jpg" align="middle" width="400px" />
+          <p class="image-caption">A lantern.</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/lantern.jpg"
+            align="middle"
+            width="400px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">The "rectified" lantern.</p>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 40px">Blend the Images Into a Mosaic</h3>
+
+      <p>
+        Finally, I moved onto blending images into a mosaic. Images in the
+        mosaic must have the same perspective, so I averaged the key points of
+        both images to find the target plane and computed the corresponding
+        homographies to this plane.
+      </p>
+
+      <p>
+        I based the dimensions of the final bounding box on the sum of the
+        minimum and maximum bounds of each image (post warp). To account for
+        these new bounds, I shifted the warped images accordingly before placing
+        them within the bounding box. The final mosaic is defined by the simple
+        average between the alpha masks of both images. Highly intricate
+        structures like the ribcage are still a bit blurry even after the warp,
+        which could likely be improved by selecting more correspondence points.
+      </p>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="out/t_rex_left_warped.jpg" align="middle" width="425px" />
+          <p class="image-caption">The left image.</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/t_rex_right_warped.jpg"
+            align="middle"
+            width="425px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">The right image.</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="out/t_rex_left_mask.jpg" align="middle" width="320px" />
+          <p class="image-caption">The left mask.</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/t_rex_both_mask.jpg"
+            align="middle"
+            width="320px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">The combined mask.</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/t_rex_right_mask.jpg"
+            align="middle"
+            width="320px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">The right mask.</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="out/t_rex_mosaic.jpg" align="middle" width="700px" />
+          <p class="image-caption">The final mosaic.</p>
+        </div>
+      </div>
+
+      <p>
+        Due to differences in exposure between the images, the mask leaves a
+        clear seam where the images overlap. I decided to "feather" my masks by
+        having my left mask fall off linearly toward the right, and my right
+        mask fall off linearly toward the left. Alhough this still leaves some
+        faint wedges, the mask is less noticeable and the mosaic is pretty
+        improved overall.
+      </p>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img
+            src="out/t_rex_left_feathered_mask.jpg"
+            align="middle"
+            width="425px"
+          />
+          <p class="image-caption">The left mask (feathered).</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/t_rex_right_feathered_mask.jpg"
+            align="middle"
+            width="425px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">The right mask (feathered).</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img
+            src="out/t_rex_feathered_mosaic.jpg"
+            align="middle"
+            width="700px"
+          />
+          <p class="image-caption">The final mosaic (feathered).</p>
+        </div>
+      </div>
+
+      <p>I used the same technique to blend the following images together.</p>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="out/balcony_left_warped.jpg" align="middle" width="425px" />
+          <p class="image-caption">The left image.</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/balcony_right_warped.jpg"
+            align="middle"
+            width="425px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">The right image.</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img
+            src="out/balcony_left_feathered_mask.jpg"
+            align="middle"
+            width="425px"
+          />
+          <p class="image-caption">The left mask.</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/balcony_right_feathered_mask.jpg"
+            align="middle"
+            width="425px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">The right mask.</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img
+            src="out/balcony_feathered_mosaic.jpg"
+            align="middle"
+            width="700px"
+          />
+          <p class="image-caption">The final mosaic.</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="out/skull_left_warped.jpg" align="middle" width="425px" />
+          <p class="image-caption">The left image.</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/skull_right_warped.jpg"
+            align="middle"
+            width="425px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">The right image.</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img
+            src="out/skull_left_feathered_mask.jpg"
+            align="middle"
+            width="425px"
+          />
+          <p class="image-caption">The left mask.</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/skull_right_feathered_mask.jpg"
+            align="middle"
+            width="425px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">The right mask.</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img
+            src="out/skull_feathered_mosaic.jpg"
+            align="middle"
+            width="700px"
+          />
+          <p class="image-caption">The final mosaic.</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
