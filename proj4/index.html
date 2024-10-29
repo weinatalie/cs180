@@ -675,5 +675,431 @@
         </div>
       </div>
     </div>
+
+    <h1 class="title">Feature Matching</h1>
+    <div>
+      <h2 style="margin-top: 40px; font-size: 28px">Overview</h2>
+      <p>For the second part of the project, I</p>
+
+      <h2 style="margin-top: 40px; font-size: 28px">
+        Section I: Detecting Corner Features in an Image
+      </h2>
+      <p>
+        Using the skeleton code, I computed the set of Harris interest points
+        for each image. The initial set of points is very dense, an issue that
+        we will address through adaptive non-maximal suppression. I also
+        performed some initial thresholding by editing parameters from the
+        skeleton code.
+      </p>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="out/balcony_left_harris.png" align="middle" width="450px" />
+          <p class="image-caption">My balcony with Harris points (left).</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/balcony_right_harris.png"
+            align="middle"
+            width="450px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">My balcony with Harris points (right).</p>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 40px; font-size: 28px">
+        Section II: Adaptive Non-Maximal Suppression
+      </h2>
+      <p>
+        To implement adaptive non-maximal suppression, I calculated an
+        <i>r</i> value for each interest point according to the following
+        equation:
+      </p>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <img src="data/anms_equation.jpg" align="middle" width="450px" />
+      </div>
+
+      <p>
+        The <i>r</i> value is the minimum distance from a point to its neighbor,
+        where the <i>h</i> value of the point is at least 0.9 * the
+        <i>h</i> value of the neighbor. Then, I selected the 500 points with the
+        highest <i>r</i> values and discarded the rest. The suppressed points
+        are more evenly distributed throughout the image and tend to fall along
+        strong corners.
+      </p>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="out/balcony_left_anms.png" align="middle" width="450px" />
+          <p class="image-caption">My balcony with suppressed points (left).</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/balcony_right_anms.png"
+            align="middle"
+            width="450px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">
+            My balcony with suppressed points (right).
+          </p>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 40px; font-size: 28px">
+        Section III: Extracting Feature Descriptors
+      </h2>
+      <p>
+        Next, I sampled a 40x40 window around each interest point to obtain
+        feature descriptors for the images. Each window was blurred and scaled
+        down to an 8x8 patch, reducing the size of the vectors from 160 to 64
+        features. Finally, the patches were bias/gain-normalized.
+      </p>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="data/window.png" align="middle" width="350px" />
+          <p class="image-caption">40x40 window.</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="data/patch.png"
+            align="middle"
+            width="350px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">8x8 patch after downsampling.</p>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 40px; font-size: 28px">
+        Section IV: Matching Feature Descriptors
+      </h2>
+      <p>
+        Using the descriptors obtained in the previous section, I identified
+        features that were likely to be good matches during image stitching.
+        After feature-matching, the remaining points are shared between the
+        images.
+      </p>
+
+      <p>
+        I iterated through each feature from the first image and computed its
+        SSD with each feature from the second image, keeping track of the first
+        and second nearest-neighbor features. Next, I used Lowe's ratio test to
+        determine if a feature and its first nearest-neighbor were matching. If
+        the ratio between the SSDs of the first nearest-neighbor and the second
+        nearest-neighbor lay below a certain threshold (which I ranged between
+        0.2 to 0.3 based on the paper), I considered the pair a match, as the
+        first nearest-neighbor was much closer than the second nearest-neighbor.
+      </p>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img
+            src="out/balcony_left_matched.png"
+            align="middle"
+            width="450px"
+          />
+          <p class="image-caption">My balcony with matching points (left).</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/balcony_right_matched.png"
+            align="middle"
+            width="450px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">My balcony with matching points (right).</p>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 40px; font-size: 28px">
+        Section V: Computing Robust Homographies
+      </h2>
+      <p>
+        Finally, I implemented RANSAC, a method for computing homographies that
+        minimizes the effect of outliers. My RANSAC loop ran 100 times and
+        selected four random pairs of features at each step. I computed a
+        homography from each set of features, using it to warp all of the points
+        from the source image. I then iterated through the warped points to
+        identify inliers, warped points that end up less than 4 pixels away from
+        the target point. I kept track of the largest set of inliers and used it
+        to compute the final homography at the end of the function.
+      </p>
+
+      <p>
+        I used the warping methods from the previous part of the project along
+        with the new methods to automate the image-stitching process.
+      </p>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img
+            src="out/auto_balcony_left_warped.jpg"
+            align="middle"
+            width="425px"
+          />
+          <p class="image-caption">The left image.</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/auto_balcony_right_warped.jpg"
+            align="middle"
+            width="425px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">The right image.</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="out/auto_balcony_mosaic.jpg" align="middle" width="700px" />
+          <p class="image-caption">The final mosaic.</p>
+        </div>
+      </div>
+
+      <p>I auto-stitched the rest of the images as well.</p>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img
+            src="out/auto_skull_left_warped.jpg"
+            align="middle"
+            width="425px"
+          />
+          <p class="image-caption">The left image.</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/auto_skull_right_warped.jpg"
+            align="middle"
+            width="425px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">The right image.</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="out/auto_skull_mosaic.jpg" align="middle" width="700px" />
+          <p class="image-caption">The final mosaic.</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img
+            src="out/auto_t_rex_left_warped.jpg"
+            align="middle"
+            width="425px"
+          />
+          <p class="image-caption">The left image.</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/auto_t_rex_right_warped.jpg"
+            align="middle"
+            width="425px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">The right image.</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="out/auto_t_rex_mosaic.jpg" align="middle" width="700px" />
+          <p class="image-caption">The final mosaic.</p>
+        </div>
+      </div>
+
+      <p>
+        The results are comparable to the hand-stitched mosaics, though the
+        hand-stitched ones are a little better across the board.
+      </p>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img
+            src="out/balcony_feathered_mosaic.jpg"
+            align="middle"
+            width="450px"
+          />
+          <p class="image-caption">The final mosaic (manual).</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/auto_balcony_mosaic.jpg"
+            align="middle"
+            width="450px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">The final mosaic (auto).</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img
+            src="out/skull_feathered_mosaic.jpg"
+            align="middle"
+            width="450px"
+          />
+          <p class="image-caption">The final mosaic (manual).</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/auto_skull_mosaic.jpg"
+            align="middle"
+            width="450px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">The final mosaic (auto).</p>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img
+            src="out/t_rex_feathered_mosaic.jpg"
+            align="middle"
+            width="450px"
+          />
+          <p class="image-caption">The final mosaic (manual).</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/auto_t_rex_mosaic.jpg"
+            align="middle"
+            width="450px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">The final mosaic (auto).</p>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 40px; font-size: 28px">Conclusion</h2>
+      <p>
+        The coolest thing I learned was how we were able to automate
+        image-stitching—a normally time-intensive process—with just a few helper
+        functions. I wonder how we can apply some of the concepts from this
+        project to automating other computer vision tasks.
+      </p>
+    </div>
   </body>
 </html>
