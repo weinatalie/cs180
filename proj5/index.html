@@ -1,0 +1,1390 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <style>
+      body {
+        padding: 60px;
+        width: 1000px;
+        margin: auto;
+        text-align: left;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        font-weight: 400;
+        color: #333333;
+      }
+      p {
+        font-family: "Open Sans", sans-serif;
+      }
+      .image-container {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .title {
+        font-size: 36px;
+        font-weight: 700;
+      }
+      .subtitle {
+        font-size: 20px;
+        font-weight: 600;
+        margin-top: 16px;
+      }
+      h2 {
+        font-weight: 600;
+      }
+      h3 {
+        font-size: 20px;
+      }
+      .image {
+        flex: 1;
+        text-align: center;
+      }
+      .container {
+        display: flex;
+        align-items: flex-start;
+      }
+      .image-caption {
+        font-size: 14px;
+        color: #808080;
+      }
+      .image-title {
+        font-size: 16px;
+        font-weight: bold;
+      }
+    </style>
+    <title>Fun With Diffusion Models</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700;900&family=Source+Sans:wght@100;300;400;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <h1 class="title" , style="font-size: 32px">
+      CS180: Intro to Computer Vision and Computational Photography
+    </h1>
+    <h1 class="title">Fun With Diffusion Models</h1>
+    <h2 class="subtitle">Natalie Wei (3037990373)</h2>
+
+    <div>
+      <h2 style="margin-top: 40px; font-size: 30px">Overview</h2>
+      <p>
+        For this project, I explored the implementation and application of
+        generative diffusion models. First, I implemented simple denoising loops
+        for pre-trained models and extrapolated them to complex tasks such as
+        inpainting. Then, I implemented my own UNet model architectures and
+        successfully trained them for diffusion based on the MNIST dataset. From
+        working with pre-trained ones in Part A to training my own in Part B, I
+        gained a lot of hands-on experience with diffusion models. It was also
+        my first time implementing and training models from scratch.
+      </p>
+
+      <h2 style="margin-top: 40px; font-size: 30px">
+        Part A: The Power of Diffusion Models
+      </h2>
+
+      <h2 style="margin-top: 40px; font-size: 28px">Part 0: Setup</h2>
+
+      <p>
+        To start, I compared the results of the DeepFloyd model with different
+        prompts and <i>num_inference_steps</i>. Using
+        <i>num_inference_steps</i> of 5 produces visibly noisy images, and the
+        results for "a man wearing a hat" and "a rocket ship" don't resemble the
+        prompt at all. Increasing <i>num_inference_steps</i> to 20 improves the
+        quality of the results, and they all accurately match the prompts.
+        However, there are some unrealistic visual effects, like the smudged sky
+        in "an oil painting of a snowy mountain village" and crossed eyes in "a
+        man wearing a hat." At 50 <i>num_inference_steps</i>, the results are
+        far more detailed and realistic with the exception of "a rocket ship,"
+        which is cartoony and stylized instead. All of the results for this and
+        subsequent parts were generated with a set seed of 180.
+      </p>
+
+      <h3 style="font-size: 18px; margin-top: 40px">
+        "an oil painting of a snowy mountain village"
+      </h3>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="out/p0_prompt_1_5.png" align="middle" width="250px" />
+          <p class="image-caption">num_inference_steps = 5</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/p0_prompt_1_20.png"
+            align="middle"
+            width="250px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">num_inference_steps = 20</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/p0_prompt_1_50.png"
+            align="middle"
+            width="250px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">num_inference_steps = 50</p>
+        </div>
+      </div>
+
+      <h3 style="font-size: 18px; margin-top: 40px">"a man wearing a hat"</h3>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="out/p0_prompt_2_5.png" align="middle" width="250px" />
+          <p class="image-caption">num_inference_steps = 5</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/p0_prompt_2_20.png"
+            align="middle"
+            width="250px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">num_inference_steps = 20</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/p0_prompt_2_50.png"
+            align="middle"
+            width="250px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">num_inference_steps = 50</p>
+        </div>
+      </div>
+
+      <h3 style="font-size: 18px; margin-top: 40px">"a rocket ship"</h3>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 30px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="out/p0_prompt_3_5.png" align="middle" width="250px" />
+          <p class="image-caption">num_inference_steps = 5</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/p0_prompt_3_20.png"
+            align="middle"
+            width="250px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">num_inference_steps = 20</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/p0_prompt_3_50.png"
+            align="middle"
+            width="250px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">num_inference_steps = 50</p>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 40px; font-size: 28px">Part I: Sampling Loops</h2>
+    </div>
+
+    <h2 style="margin-top: 40px; font-size: 24px">
+      Section I: Implementing the Forward Process
+    </h2>
+
+    <p>
+      The forward process scales and adds noise to an image by sampling from a
+      Gaussian distribution. I used the following equation to implement the
+      forward process as a function:
+    </p>
+
+    <center>
+      <img
+        src="data/A_2.png"
+        align="middle"
+        width="320px"
+        style="margin-top: 10px; margin-bottom: 10px"
+      />
+    </center>
+
+    <p>
+      <i>x<sub>t</sub></i> is the noisy image at timestep <i>t</i>,
+      <i>x<sub>0</sub></i> is the original image,
+      <i>bar alpha<sub>t</sub></i> is taken from <i>alphas_cumprod</i> at index
+      <i>t</i>, and <i>epsilon</i> is a Gaussian distribution computed using
+      <i>torch.randn_like</i>. The image gets noisier as <i>t</i> increases.
+    </p>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p1_0.png" width="200px" />
+        <p class="image-caption">t = 0 (Original image)</p>
+      </div>
+      <div class="image">
+        <img src="out/p1_250.png" width="200px" />
+        <p class="image-caption">t = 250</p>
+      </div>
+      <div class="image">
+        <img src="out/p1_500.png" width="200px" />
+        <p class="image-caption">t = 500</p>
+      </div>
+      <div class="image">
+        <img src="out/p1_750.png" width="200px" />
+        <p class="image-caption">t = 750</p>
+      </div>
+    </div>
+
+    <h2 style="margin-top: 40px; font-size: 24px">
+      Section II: Classical Denoising
+    </h2>
+
+    <p>
+      First, I tried to denoise the images from the previous part by applying a
+      Gaussian blur filter with a
+      <i>kernel_size</i> of 7. Evidently, Gaussian blur isn't a very effective
+      method, as the images are still noisy.
+    </p>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p1_250.png" width="250px" />
+        <p class="image-caption">t = 250</p>
+      </div>
+      <div class="image">
+        <img src="out/p1_500.png" width="250px" />
+        <p class="image-caption">t = 500</p>
+      </div>
+      <div class="image">
+        <img src="out/p1_750.png" width="250px" />
+        <p class="image-caption">t = 750</p>
+      </div>
+    </div>
+
+    <div class="image-container" style="margin-top: 30px">
+      <div class="image">
+        <img src="out/p2_250.png" width="250px" />
+        <p class="image-caption">t = 250 (Denoised)</p>
+      </div>
+      <div class="image">
+        <img src="out/p2_500.png" width="250px" />
+        <p class="image-caption">t = 500 (Denoised)</p>
+      </div>
+      <div class="image">
+        <img src="out/p2_750.png" width="250px" />
+        <p class="image-caption">t = 750 (Denoised)</p>
+      </div>
+    </div>
+
+    <h2 style="margin-top: 40px; font-size: 24px">
+      Section III: One-Step Denoising
+    </h2>
+
+    <p>
+      Next, I implemented an improved denoising method: one-step denoising.
+      Given a noisy image, one-step denoising estimates the Gaussian noise with
+      the UNet model and approximates the clean image by removing noise. Since
+      the forward process not only adds noise but also scales the image, I
+      appropriately scaled the estimated noise based on the forward process
+      equation. One-step denoising produced far beter results than classical
+      denoising, though its effectiveness decreased with noisier input images.
+    </p>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p1_0.png" width="200px" />
+        <p class="image-caption">t = 0 (Original image)</p>
+      </div>
+      <div class="image">
+        <img src="out/p1_250.png" width="200px" />
+        <p class="image-caption">t = 250</p>
+      </div>
+      <div class="image">
+        <img src="out/p1_500.png" width="200px" />
+        <p class="image-caption">t = 500</p>
+      </div>
+      <div class="image">
+        <img src="out/p1_750.png" width="200px" />
+        <p class="image-caption">t = 750</p>
+      </div>
+    </div>
+
+    <div class="image-container" style="margin-top: 30px">
+      <div class="image">
+        <img src="out/p1_0.png" width="200px" />
+        <p class="image-caption">t = 0 (Original image)</p>
+      </div>
+      <div class="image">
+        <img src="out/p3_250.png" width="200px" />
+        <p class="image-caption">t = 250 (Denoised)</p>
+      </div>
+      <div class="image">
+        <img src="out/p3_500.png" width="200px" />
+        <p class="image-caption">t = 500 (Denoised)</p>
+      </div>
+      <div class="image">
+        <img src="out/p3_750.png" width="200px" />
+        <p class="image-caption">t = 750 (Denoised)</p>
+      </div>
+    </div>
+
+    <h2 style="margin-top: 40px; font-size: 24px">
+      Section IV: Iterative Denoising
+    </h2>
+
+    <p>
+      To mitigate the issues of one-step denoising, I also implemented iterative
+      denoising. Iterative denoising, as the name suggests, repeatedly performs
+      one-step denoising at each timestep until a clean image is produced. I
+      optimized the process by skipping timesteps not found in
+      <i>strided_timesteps</i>, which starts at timestep 990 and takes steps of
+      size 30 until arriving at 0. At each step, I apply the formula below to
+      estimate <i>x<sub>t'</sub></i> — the less noisy image at the next timestep
+      <i>t'</i> — based on the current image <i>x<sub>t</sub></i> at timestep
+      <i>t</i>:
+    </p>
+
+    <center>
+      <img
+        src="data/A_3.png"
+        align="middle"
+        width="320px"
+        style="margin-top: 10px; margin-bottom: 10px"
+      />
+    </center>
+
+    <p>
+      <i>x<sub>0</sub></i> is the current estimate of the clean image,
+      <i>alpha<sub>t</sub></i> is <i>bar alpha<sub>t</sub></i> divided by
+      <i>bar alpha<sub>t'</sub></i
+      >, and <i>beta<sub>t</sub></i> is 1 - <i>alpha<sub>t</sub></i
+      >. While the iteratively denoised result isn't an exact match to the
+      original image, it's still higher quality than the one-step denoised
+      result and far better than the classically denoised result.
+    </p>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p4_690.png" width="150px" />
+        <p class="image-caption">t = 690</p>
+      </div>
+      <div class="image">
+        <img src="out/p4_540.png" width="150px" />
+        <p class="image-caption">t = 540</p>
+      </div>
+      <div class="image">
+        <img src="out/p4_390.png" width="150px" />
+        <p class="image-caption">t = 390</p>
+      </div>
+      <div class="image">
+        <img src="out/p4_240.png" width="150px" />
+        <p class="image-caption">t = 240</p>
+      </div>
+      <div class="image">
+        <img src="out/p4_90.png" width="150px" />
+        <p class="image-caption">t = 90</p>
+      </div>
+    </div>
+
+    <div class="image-container" style="margin-top: 30px">
+      <div class="image">
+        <img src="out/p1_0.png" width="200px" />
+        <p class="image-caption">Original image</p>
+      </div>
+      <div class="image">
+        <img src="out/p4_iterative.png" width="200px" />
+        <p class="image-caption">Iteratively denoised</p>
+      </div>
+      <div class="image">
+        <img src="out/p4_one_step.png" width="200px" />
+        <p class="image-caption">One-step denoised</p>
+      </div>
+      <div class="image">
+        <img src="out/p4_classical.png" width="200px" />
+        <p class="image-caption">Classically denoised</p>
+      </div>
+    </div>
+
+    <h2 style="margin-top: 40px; font-size: 24px">
+      Section V: Diffusion Model Sampling
+    </h2>
+
+    <p>
+      With iterative denoising complete, I moved onto generating images from
+      scratch. I generated pure noise using <i>torch.randn</i> and performed
+      iterative denoising with the prompt "a high quality photo", yielding the
+      results below. The images are generally passable, but don't hold up as
+      realistic photos upon a second glance.
+    </p>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p5_1.png" width="150px" />
+        <p class="image-caption">Sample 1</p>
+      </div>
+      <div class="image">
+        <img src="out/p5_2.png" width="150px" />
+        <p class="image-caption">Sample 2</p>
+      </div>
+      <div class="image">
+        <img src="out/p5_3.png" width="150px" />
+        <p class="image-caption">Sample 3</p>
+      </div>
+      <div class="image">
+        <img src="out/p5_4.png" width="150px" />
+        <p class="image-caption">Sample 4</p>
+      </div>
+      <div class="image">
+        <img src="out/p5_5.png" width="150px" />
+        <p class="image-caption">Sample 5</p>
+      </div>
+    </div>
+
+    <h2 style="margin-top: 40px; font-size: 24px">
+      Section VI: Classifier-Free Guidance
+    </h2>
+
+    <p>
+      I improved the quality of the result images with classifier-free guidance
+      (CFG). While my previous implementation of iterative denoising only used
+      the conditional noise estimate, CFG uses both conditional and
+      unconditional noise estimates to determine the overall noise estimate,
+      where the unconditiional estimate is the noise estimate under a null
+      prompt. I revised my implementation to compute the noise with the
+      following equation:
+    </p>
+
+    <center>
+      <img
+        src="data/A_4.png"
+        align="middle"
+        width="200px"
+        style="margin-top: 10px; margin-bottom: 10px"
+      />
+    </center>
+
+    <p>
+      I used a <i>gamma</i> of 7 for my results. The images are much higher
+      quality, but noticeably less diverse, with repeated subject matters.
+    </p>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p6_1.png" width="150px" />
+        <p class="image-caption">Sample 1 (CFG)</p>
+      </div>
+      <div class="image">
+        <img src="out/p6_2.png" width="150px" />
+        <p class="image-caption">Sample 2 (CFG)</p>
+      </div>
+      <div class="image">
+        <img src="out/p6_3.png" width="150px" />
+        <p class="image-caption">Sample 3 (CFG)</p>
+      </div>
+      <div class="image">
+        <img src="out/p6_4.png" width="150px" />
+        <p class="image-caption">Sample 4 (CFG)</p>
+      </div>
+      <div class="image">
+        <img src="out/p6_5.png" width="150px" />
+        <p class="image-caption">Sample 5 (CFG)</p>
+      </div>
+    </div>
+
+    <h2 style="margin-top: 40px; font-size: 24px">
+      Section VII: Image-to-Image Translation
+    </h2>
+
+    <p>
+      With CFG, I can now move onto more complex tasks such as image-to-image
+      translation. I noised the original image, then "forced" the noisy image
+      onto the image manifold at each step so the results appear to approach the
+      original image. I varied my results with different
+      <i>i_start</i> levels, representing the starting index, with higher
+      <i>i_start</i> levels corresponding to greater similarity with the target
+      image.
+    </p>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p7_1.png" width="125px" />
+        <p class="image-caption">i_start = 1</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_3.png" width="125px" />
+        <p class="image-caption">i_start = 3</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_5.png" width="125px" />
+        <p class="image-caption">i_start = 5</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_7.png" width="125px" />
+        <p class="image-caption">i_start = 7</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_10.png" width="125px" />
+        <p class="image-caption">i_start = 10</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_20.png" width="125px" />
+        <p class="image-caption">i_start = 20</p>
+      </div>
+      <div class="image">
+        <img src="out/p1_0.png" width="125px" />
+        <p class="image-caption">Original image</p>
+      </div>
+    </div>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p7_cake_1.png" width="125px" />
+        <p class="image-caption">i_start = 1</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_cake_3.png" width="125px" />
+        <p class="image-caption">i_start = 3</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_cake_5.png" width="125px" />
+        <p class="image-caption">i_start = 5</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_cake_7.png" width="125px" />
+        <p class="image-caption">i_start = 7</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_cake_10.png" width="125px" />
+        <p class="image-caption">i_start = 10</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_cake_20.png" width="125px" />
+        <p class="image-caption">i_start = 20</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_cake.png" width="125px" />
+        <p class="image-caption">Original image</p>
+      </div>
+    </div>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p7_bird_1.png" width="125px" />
+        <p class="image-caption">i_start = 1</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_bird_3.png" width="125px" />
+        <p class="image-caption">i_start = 3</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_bird_5.png" width="125px" />
+        <p class="image-caption">i_start = 5</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_bird_7.png" width="125px" />
+        <p class="image-caption">i_start = 7</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_bird_10.png" width="125px" />
+        <p class="image-caption">i_start = 10</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_bird_20.png" width="125px" />
+        <p class="image-caption">i_start = 20</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_bird.png" width="125px" />
+        <p class="image-caption">Original image</p>
+      </div>
+    </div>
+
+    <h3 style="font-size: 18px; margin-top: 40px">
+      Editing Hand-Drawn and Web Images
+    </h3>
+
+    <p>
+      I performed the procedure given above on non-realistic images, which first
+      required processing web and hand-drawn images. I was surprised by how well
+      the procedure performed, though some results with later starting indices
+      are definitely subject to the uncanny valley.
+    </p>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p7_pikachu_1.png" width="125px" />
+        <p class="image-caption">i_start = 1</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_pikachu_3.png" width="125px" />
+        <p class="image-caption">i_start = 3</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_pikachu_5.png" width="125px" />
+        <p class="image-caption">i_start = 5</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_pikachu_7.png" width="125px" />
+        <p class="image-caption">i_start = 7</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_pikachu_10.png" width="125px" />
+        <p class="image-caption">i_start = 10</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_pikachu_20.png" width="125px" />
+        <p class="image-caption">i_start = 20</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_pikachu.png" width="125px" />
+        <p class="image-caption">Original image</p>
+      </div>
+    </div>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p7_cat_1.png" width="125px" />
+        <p class="image-caption">i_start = 1</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_cat_3.png" width="125px" />
+        <p class="image-caption">i_start = 3</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_cat_5.png" width="125px" />
+        <p class="image-caption">i_start = 5</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_cat_7.png" width="125px" />
+        <p class="image-caption">i_start = 7</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_cat_10.png" width="125px" />
+        <p class="image-caption">i_start = 10</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_cat_20.png" width="125px" />
+        <p class="image-caption">i_start = 20</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_cat.png" width="125px" />
+        <p class="image-caption">Original image</p>
+      </div>
+    </div>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p7_pepe_1.png" width="125px" />
+        <p class="image-caption">i_start = 1</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_pepe_3.png" width="125px" />
+        <p class="image-caption">i_start = 3</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_pepe_5.png" width="125px" />
+        <p class="image-caption">i_start = 5</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_pepe_7.png" width="125px" />
+        <p class="image-caption">i_start = 7</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_pepe_10.png" width="125px" />
+        <p class="image-caption">i_start = 10</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_pepe_20.png" width="125px" />
+        <p class="image-caption">i_start = 20</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_pepe.png" width="125px" />
+        <p class="image-caption">Original image</p>
+      </div>
+    </div>
+
+    <h3 style="font-size: 18px; margin-top: 40px">Inpainting</h3>
+
+    <p>
+      The procedure can also be used for inpainting, with a few small edits
+      based on the following formula:
+    </p>
+
+    <center>
+      <img
+        src="data/A_5.png"
+        align="middle"
+        width="300px"
+        style="margin-top: 10px; margin-bottom: 10px"
+      />
+    </center>
+
+    <p>
+      The parts of the image estimate within the edit mask are left alone, but
+      everything else is replaced by the original image with the appropriate
+      amount of noise for timestep <i>t</i>. The final result retains the
+      overall appearance of the original image with some edits.
+    </p>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p1_0.png" width="200px" />
+        <p class="image-caption">Original image</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_mask.png" width="200px" />
+        <p class="image-caption">Mask</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_replace.png" width="200px" />
+        <p class="image-caption">To replace</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_masked.png" width="200px" />
+        <p class="image-caption">Masked image</p>
+      </div>
+    </div>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p7_icecream.png" width="200px" />
+        <p class="image-caption">Original image</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_mask_icecream.png" width="200px" />
+        <p class="image-caption">Mask</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_replace_icecream.png" width="200px" />
+        <p class="image-caption">To replace</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_masked_icecream.png" width="200px" />
+        <p class="image-caption">Masked image</p>
+      </div>
+    </div>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p7_cat_face.png" width="200px" />
+        <p class="image-caption">Original image</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_mask_cat.png" width="200px" />
+        <p class="image-caption">Mask</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_replace_cat.png" width="200px" />
+        <p class="image-caption">To replace</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_masked_cat.png" width="200px" />
+        <p class="image-caption">Masked image</p>
+      </div>
+    </div>
+
+    <h3 style="font-size: 18px; margin-top: 40px">
+      Text-Conditional Image-to-Image Translation
+    </h3>
+
+    <p>
+      Finally, I added more control to the procedure with language. Instead of
+      using the generic prompt "a high quality photo" during iterative
+      denoising, I used the precomputed prompts to condition the images at each
+      stage. The results all approach the target image while retaining elements
+      of the prompt as well.
+    </p>
+
+    <h3 style="font-size: 18px; margin-top: 40px">"a rocket ship"</h3>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p7_rocket_1.png" width="125px" />
+        <p class="image-caption">i_start = 1</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_rocket_3.png" width="125px" />
+        <p class="image-caption">i_start = 3</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_rocket_5.png" width="125px" />
+        <p class="image-caption">i_start = 5</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_rocket_7.png" width="125px" />
+        <p class="image-caption">i_start = 7</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_rocket_10.png" width="125px" />
+        <p class="image-caption">i_start = 10</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_rocket_20.png" width="125px" />
+        <p class="image-caption">i_start = 20</p>
+      </div>
+      <div class="image">
+        <img src="out/p1_0.png" width="125px" />
+        <p class="image-caption">Original image</p>
+      </div>
+    </div>
+
+    <h3 style="font-size: 18px; margin-top: 40px">"a pencil"</h3>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p7_pencil_1.png" width="125px" />
+        <p class="image-caption">i_start = 1</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_pencil_3.png" width="125px" />
+        <p class="image-caption">i_start = 3</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_pencil_5.png" width="125px" />
+        <p class="image-caption">i_start = 5</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_pencil_7.png" width="125px" />
+        <p class="image-caption">i_start = 7</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_pencil_10.png" width="125px" />
+        <p class="image-caption">i_start = 10</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_pencil_20.png" width="125px" />
+        <p class="image-caption">i_start = 20</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_icecream.png" width="125px" />
+        <p class="image-caption">Original image</p>
+      </div>
+    </div>
+
+    <h3 style="font-size: 18px; margin-top: 40px">"a photo of a dog"</h3>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p7_dog_1.png" width="125px" />
+        <p class="image-caption">i_start = 1</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_dog_3.png" width="125px" />
+        <p class="image-caption">i_start = 3</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_dog_5.png" width="125px" />
+        <p class="image-caption">i_start = 5</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_dog_7.png" width="125px" />
+        <p class="image-caption">i_start = 7</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_dog_10.png" width="125px" />
+        <p class="image-caption">i_start = 10</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_dog_20.png" width="125px" />
+        <p class="image-caption">i_start = 20</p>
+      </div>
+      <div class="image">
+        <img src="out/p7_cake.png" width="125px" />
+        <p class="image-caption">Original image</p>
+      </div>
+    </div>
+
+    <h2 style="margin-top: 40px; font-size: 24px">
+      Section VIII: Visual Anagrams
+    </h2>
+
+    <p>
+      Next, I moved onto creating interesting visual illusions. Visual anagrams
+      are images that at first depict one scene, but depict another when flipped
+      upside down. Creating visual anagrams required editing my implementation
+      iterative denoising, such that the noise estimate averaged the noise
+      estimate for the right-side-up prompt and the flipped noise estimate for
+      upside-down prompt. The former is determined by denoising the image with
+      the right-side-up prompt, while the latter is determined by denoising the
+      flipped image with the upside-down prompt, then flipping again.
+    </p>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p8_old_man.png" width="200px" />
+        <p class="image-caption">"an oil painting of an old man"</p>
+      </div>
+      <div class="image">
+        <img src="out/p8_campfire.png" width="200px" />
+        <p class="image-caption">
+          "an oil painting of people around a campfire"
+        </p>
+      </div>
+    </div>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p8_village.png" width="200px" />
+        <p class="image-caption">
+          "an oil painting of a snowy mountain village"
+        </p>
+      </div>
+      <div class="image">
+        <img src="out/p8_coast.png" width="200px" />
+        <p class="image-caption">"a photo of the amalfi coast"</p>
+      </div>
+    </div>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p8_man.png" width="200px" />
+        <p class="image-caption">"a photo of a man"</p>
+      </div>
+      <div class="image">
+        <img src="out/p8_dog.png" width="200px" />
+        <p class="image-caption">"a photo of a dog"</p>
+      </div>
+    </div>
+
+    <h2 style="margin-top: 40px; font-size: 24px">Section IX: Hybrid Images</h2>
+
+    <p>
+      I also created hybrid images using a similar method. In this case, the
+      noise estimate takes the sum of the low-passed noise estimate from one
+      prompt and the high-passed noise estimate from the other. For my low pass
+      function, I applied a Gaussian blur with a <i>kernel_size</i> of 33 and a
+      <i>sigma</i> of 2.
+    </p>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p9_skull_waterfall.png" width="250px" />
+        <p class="image-caption">"a lithograph of waterfalls"</p>
+      </div>
+      <div class="image">
+        <img src="out/p9_campfire_village.png" width="250px" />
+        <p class="image-caption">
+          "an oil painting of a snowy mountain village"
+        </p>
+      </div>
+      <div class="image">
+        <img src="out/p9_man_campfire.png" width="250px" />
+        <p class="image-caption">
+          "an oil painting of people around a campfire"
+        </p>
+      </div>
+    </div>
+
+    <div class="image-container" style="margin-top: 40px">
+      <div class="image">
+        <img src="out/p9_skull_waterfall.png" width="35px" />
+        <p class="image-caption">"a lithograph of a skull"</p>
+      </div>
+      <div class="image">
+        <img src="out/p9_campfire_village.png" width="35px" />
+        <p class="image-caption">
+          "an oil painting of people around a campfire"
+        </p>
+      </div>
+      <div class="image">
+        <img src="out/p9_man_campfire.png" width="35px" />
+        <p class="image-caption">"an oil painting of an old man"</p>
+      </div>
+    </div>
+
+    <h2 style="margin-top: 40px; font-size: 30px">
+      Part B: Diffusion Models from Scratch
+    </h2>
+
+    <h2 style="margin-top: 40px; font-size: 28px">
+      Part I: Training a Single-Step Denoising UNet
+    </h2>
+
+    <h2 style="margin-top: 40px; font-size: 24px">
+      Section I: Implementing the UNet
+    </h2>
+
+    <p>
+      For this part of the project, I will implement a denoiser as a UNet. The
+      UNet architecture is shown below, along with standard UNet operations:
+    </p>
+
+    <center>
+      <img
+        src="data/UNet.png"
+        align="middle"
+        width="800px"
+        style="margin-top: 30px; margin-bottom: 30px"
+      />
+    </center>
+
+    <center>
+      <img
+        src="data/UNet_operations.png"
+        align="middle"
+        width="800px"
+        style="margin-top: 20px; margin-bottom: 20px"
+      />
+    </center>
+
+    <p>I have that:</p>
+
+    <center>
+      <img
+        src="data/UNet_definitions_1.png"
+        align="middle"
+        width="1000px"
+        style="margin-top: 20px; margin-bottom: 20px"
+      />
+    </center>
+
+    <p>At a high level, the blocks serve the following functions:</p>
+
+    <center>
+      <img
+        src="data/UNet_definitions_2.png"
+        align="middle"
+        width="1000px"
+        style="margin-top: 20px; margin-bottom: 20px"
+      />
+    </center>
+
+    <p>
+      To deepen the network, I also defined composed operations using the simple
+      operations. This does not change the tensor's height, width, or number of
+      channels, but adds more learnable parameters.
+    </p>
+
+    <center>
+      <img
+        src="data/UNet_definitions_3.png"
+        align="middle"
+        width="1000px"
+        style="margin-top: 10px; margin-bottom: 30px"
+      />
+    </center>
+
+    <h2 style="margin-top: 40px; font-size: 24px">
+      Section II: Using the UNet to Train a Denoiser
+    </h2>
+
+    <p>
+      Next, I used my UNet to train a denoiser that takes in a noisy image
+      <i>z</i> and is able to map <i>z</i> to a clean image <i>x</i>.
+    </p>
+
+    <p>
+      First, I generated training pairs consisting of clean images and images
+      noised with various <i>sigma</i> values. I generated the noisy pairs using
+      the forward process from the previous part.
+    </p>
+
+    <center>
+      <img
+        src="out/uncond_noised.jpg"
+        align="middle"
+        width="800px"
+        style="margin-top: 20px; margin-bottom: 20px"
+      />
+    </center>
+
+    <h3 style="font-size: 18px; margin-top: 40px">Training</h3>
+
+    <p>
+      I trained the model to denoise noisy images with a <i>sigma</i> of 0.5 by
+      optimizing over L2 loss. The training period was five epochs with a batch
+      size of 256 and a learning rate of <i>1e-4</i>. I also set the
+      hyperparameter <i>D</i> at 128 for my UNet. I obtained the following loss
+      curve:
+    </p>
+
+    <center>
+      <img
+        src="out/uncond_plot.png"
+        align="middle"
+        width="500px"
+        style="margin-top: 20px; margin-bottom: 20px"
+      />
+    </center>
+
+    <p>
+      I have also included the results of the denoiser after the first epoch:
+    </p>
+
+    <center>
+      <img
+        src="out/uncond_1.jpg"
+        align="middle"
+        width="400px"
+        style="margin-top: 20px; margin-bottom: 20px"
+      />
+    </center>
+
+    <p>
+      And the results of the denoiser after five epochs, which are noticeably
+      less noisy and improved:
+    </p>
+
+    <center>
+      <img
+        src="out/uncond_5.jpg"
+        align="middle"
+        width="400px"
+        style="margin-top: 20px; margin-bottom: 20px"
+      />
+    </center>
+
+    <h3 style="font-size: 18px; margin-top: 40px">
+      Out-of-Distribution Testing
+    </h3>
+
+    <p>
+      Since the denoiser was trained on images noised with a <i>sigma</i> of
+      0.5, I also tested its performance on the following <i>sigma</i> values.
+      The model still performs well up to a <i>sigma</i> of around 0.8, where
+      noticeable artifacts start appearing.
+    </p>
+
+    <center>
+      <img
+        src="out/uncond_ood.jpg"
+        align="middle"
+        width="800px"
+        style="margin-top: 20px; margin-bottom: 20px"
+      />
+    </center>
+
+    <h2 style="margin-top: 40px; font-size: 28px">
+      Part II: Training a Diffusion Model
+    </h2>
+
+    <h2 style="margin-top: 40px; font-size: 24px">
+      Section I: Adding Time Conditioning to UNet
+    </h2>
+
+    <p>
+      The UNet is currently trained to predict a clean image from a noisy one.
+      However, the UNet can be used for diffusion by instead predicting the
+      noise at each timestep and iteratively denoising an image. This required
+      conditioning my UNet with timestep
+      <i>t</i>, a scalar. I embedded a normalized <i>t</i> into my model based
+      on the following architecture:
+    </p>
+
+    <center>
+      <img
+        src="data/time_UNet.png"
+        align="middle"
+        width="800px"
+        style="margin-top: 30px; margin-bottom: 30px"
+      />
+    </center>
+
+    <p>This new architecture also required a new block, shown below:</p>
+
+    <center>
+      <img
+        src="data/FCBlock.png"
+        align="middle"
+        width="500px"
+        style="margin-top: 20px; margin-bottom: 20px"
+      />
+    </center>
+
+    <h2 style="margin-top: 40px; font-size: 24px">
+      Section II: Training the UNet
+    </h2>
+
+    <p>
+      The new training loop follows the equation below. Essentially, the model
+      continuously receives a random image as well as a random <i>t</i>, then
+      predicts the noise in the image at timestep <i>t</i>. The process repeats
+      until the model converges.
+    </p>
+
+    <center>
+      <img
+        src="data/B_1.png"
+        align="middle"
+        width="600px"
+        style="margin-top: 10px; margin-bottom: 10px"
+      />
+    </center>
+
+    <p>
+      I trained the model for noise prediction by optimizing over L2 loss. The
+      training period was 20 epochs with a batch size of 128 and a learning rate
+      of <i>1e-3</i>; I also used an exponential learning rate decay scheduler
+      with a gamma of <i>0.1 ** (1 / num_epochs)</i>. I set the hyperparameter
+      <i>D</i> to 128 for the time-conditioned UNet. I obtained the following
+      loss curve:
+    </p>
+
+    <center>
+      <img
+        src="out/time_plot.png"
+        align="middle"
+        width="500px"
+        style="margin-top: 20px; margin-bottom: 20px"
+      />
+    </center>
+
+    <h2 style="margin-top: 40px; font-size: 24px">
+      Section III: Sampling from the UNet
+    </h2>
+
+    <p>
+      Sampling closely resembles the iterative denoising process from the
+      previous part. Instead of calculating predicted variance, however, I used
+      a list of <i>beta</i> values.
+    </p>
+
+    <center>
+      <img
+        src="data/B_2.png"
+        align="middle"
+        width="600px"
+        style="margin-top: 10px; margin-bottom: 10px"
+      />
+    </center>
+
+    <p>
+      After five epochs, most of the results are pretty scribbly and
+      indecipherable:
+    </p>
+
+    <center>
+      <img
+        src="out/time_5.jpg"
+        align="middle"
+        width="700px"
+        style="margin-top: 20px; margin-bottom: 20px"
+      />
+    </center>
+
+    <p>Here are the results after 20 epochs, which are more legible:</p>
+
+    <center>
+      <img
+        src="out/time_20.jpg"
+        align="middle"
+        width="700px"
+        style="margin-top: 20px; margin-bottom: 20px"
+      />
+    </center>
+
+    <p>
+      Some of the results are still illegible, but for the most part, they
+      resemble handwritten digits.
+    </p>
+
+    <h2 style="margin-top: 40px; font-size: 24px">
+      Section IV: Adding Class-Conditioning to UNet
+    </h2>
+
+    <p>
+      In addition, I conditioned my UNet on the class of the digit from zero to
+      nine. I added two additional FCBlocks to my UNet architecture to condition
+      a vector <i>c</i>. Where <i>t</i> is a scalar, I used one-hot encoding to
+      turn <i>c</i> into a vector.
+    </p>
+
+    <p>
+      The training loop is quite similar to that for the time-conditioned UNet,
+      the difference being the inclusion of <i>c</i>. <i>c</i> has a
+      <i>p_uncond</i> chance of being set to a zero vector, meaning that
+      unconditional generation is still periodically performed:
+    </p>
+
+    <center>
+      <img
+        src="data/B_3.png"
+        align="middle"
+        width="600px"
+        style="margin-top: 10px; margin-bottom: 10px"
+      />
+    </center>
+
+    <p>
+      Otherwise, the model was trained with the same parameters as the previous
+      section. I obtained the following loss curve:
+    </p>
+
+    <center>
+      <img
+        src="out/class_plot.png"
+        align="middle"
+        width="500px"
+        style="margin-top: 20px; margin-bottom: 20px"
+      />
+    </center>
+
+    <h2 style="margin-top: 40px; font-size: 24px">
+      Section V: Sampling from the Class-Conditioned UNet
+    </h2>
+
+    <p>
+      The sampling loop is very similar to that of iterative denoising with CFG.
+      I used a <i>gamma</i> of 5.0 and followed the implementation below:
+    </p>
+
+    <center>
+      <img
+        src="data/B_4.png"
+        align="middle"
+        width="600px"
+        style="margin-top: 10px; margin-bottom: 10px"
+      />
+    </center>
+
+    <p>Here are the results of all the digits after five epochs:</p>
+
+    <center>
+      <img
+        src="out/class_5.jpg"
+        align="middle"
+        width="700px"
+        style="margin-top: 20px; margin-bottom: 20px"
+      />
+    </center>
+
+    <p>Finally, here are the results after 20 epochs:</p>
+
+    <center>
+      <img
+        src="out/class_20.jpg"
+        align="middle"
+        width="700px"
+        style="margin-top: 20px; margin-bottom: 20px"
+      />
+    </center>
+
+    <p>
+      The results for five and eight are visibly smoother than from the ones
+      created after five epochs.
+    </p>
+  </body>
+</html>
