@@ -1,0 +1,909 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <style>
+      body {
+        padding: 60px;
+        width: 1000px;
+        margin: auto;
+        text-align: left;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        font-weight: 400;
+        color: #333333;
+      }
+      p {
+        font-family: "Open Sans", sans-serif;
+      }
+      .image-container {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .title {
+        font-size: 36px;
+        font-weight: 700;
+      }
+      .subtitle {
+        font-size: 20px;
+        font-weight: 600;
+        margin-top: 16px;
+      }
+      h2 {
+        font-weight: 600;
+      }
+      h3 {
+        font-size: 20px;
+      }
+      .image {
+        flex: 1;
+        text-align: center;
+      }
+      .container {
+        display: flex;
+        align-items: flex-start;
+      }
+      .image-caption {
+        font-size: 14px;
+        color: #808080;
+      }
+      .image-title {
+        font-size: 16px;
+        font-weight: bold;
+      }
+    </style>
+    <title>Final Project</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700;900&family=Source+Sans:wght@100;300;400;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <h1 class="title" , style="font-size: 32px">
+      CS180: Intro to Computer Vision and Computational Photography
+    </h1>
+    <h1 class="title">Final Project</h1>
+    <h2 class="subtitle">Natalie Wei (3037990373)</h2>
+
+    <div>
+      <h2 style="margin-top: 40px; font-size: 30px">Overview</h2>
+      <p>
+        First, I showed that it was possible to reproduce complex visual effects
+        such as depth refocusing and aperture adjustment using only shifting and
+        averaging operations. I accomplished this by leveraging light field data
+        contained within image datasets that captured scenes along a plane
+        orthogonal to the optical axis.
+      </p>
+
+      <p>
+        Next, I explored gradient domain fusion as a method for image blending.
+        After practicing image reconstruction through the toy problem, I
+        implemented poisson blending, which allowed me to seamlessly blend a
+        source image into a target image. I implemented mixed gradients as well,
+        which improved texture-mapping and refined the results even further.
+      </p>
+
+      <h2 style="margin-top: 40px; font-size: 30px">
+        Project 1: Light Field Camera
+      </h2>
+
+      <h2 style="margin-top: 40px; font-size: 28px">
+        Part I: Depth Refocusing
+      </h2>
+
+      <p>
+        Each dataset consists of 289 images on a 17x17 grid, each capturing a
+        different view of the same scene. Naively averaging the images together
+        produces a photograph that appears focused on the back of the
+        chessboard—this occurs because when the camera is moved, the position of
+        closer objects varies more than the position of farther objects.
+      </p>
+
+      <center style="margin-bottom: 40px">
+        <img
+          src="out/chess_0.jpg"
+          align="middle"
+          height="360px"
+          style="margin-top: 40px"
+        />
+        <p class="image-caption">alpha = 0</p>
+      </center>
+
+      <p>
+        I took advantage of this phenomenon by shifting the images before
+        averaging; this allowed me to focus on specific areas of the chessboard.
+        Each filename was formatted such that I could easily extract the image's
+        x, y (image) and u, v (camera) coordinates. After determining that the
+        center image was located at 8,8 on the image grid, I used it as a
+        reference to calculate shifts for all of the other images. I took the
+        difference between the center image's u, v coordinates and those of each
+        image's, then scaled the displacement by a constant
+        <i>alpha</i>. Varying the <i>alpha</i> determined how large the shift in
+        focus was in the averaged photograph.
+      </p>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 40px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="out/chess_-0.6.jpg" align="middle" width="400px" />
+          <p class="image-caption">alpha = -0.6</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/chess_0.1.jpg"
+            align="middle"
+            width="400px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">alpha = 0.1</p>
+        </div>
+      </div>
+
+      <center style="margin-bottom: 40px">
+        <img
+          src="out/chess_p1.gif"
+          align="middle"
+          height="360px"
+          style="margin-top: 20px"
+        />
+        <p class="image-caption">alpha in [-0.7, 0.2]</p>
+      </center>
+
+      <p>
+        I repeated the procedure on an additional set of images. The average of
+        this dataset produces a photograph that focuses on the front jellybeans,
+        so I adjusted my <i>alpha</i> range accordingly.
+      </p>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 40px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="out/jellybeans_-0.1.jpg" align="middle" width="420px" />
+          <p class="image-caption">alpha = -0.1</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/jellybeans_0.5.jpg"
+            align="middle"
+            width="420px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">alpha = 0.5</p>
+        </div>
+      </div>
+
+      <center style="margin-bottom: 40px">
+        <img
+          src="out/jellybeans_p1.gif"
+          align="middle"
+          height="360px"
+          style="margin-top: 20px"
+        />
+        <p class="image-caption">alpha = [-0.2, 0.6]</p>
+      </center>
+
+      <h2 style="margin-top: 40px; font-size: 28px">
+        Part II: Aperture Adjustment
+      </h2>
+
+      <p>
+        Aperture adjustment is another focusing method. Averaging more images
+        mimics a camera with a larger aperture, as it simulates more light;
+        meanwhile, averaging fewer images mimics a camera with a smaller
+        aperture. My approach was similar to that of the previous part, but with
+        an additional <i>radius</i> constraint so only images within
+        <i>radius</i> from the center image were averaged.
+      </p>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 40px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="out/chess_0_0.jpg" align="middle" width="400px" />
+          <p class="image-caption">radius = 0</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/chess_0_0.8.jpg"
+            align="middle"
+            width="400px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">radius = 8</p>
+        </div>
+      </div>
+
+      <center style="margin-bottom: 40px">
+        <img
+          src="out/chess_p2_1.gif"
+          align="middle"
+          height="360px"
+          style="margin-top: 20px"
+        />
+        <p class="image-caption">radius in [1, 8]</p>
+      </center>
+
+      <p>Again, I repeated the procedure for another set of images.</p>
+
+      <div
+        style="
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          margin-top: 40px;
+        "
+      >
+        <div style="text-align: center">
+          <img src="out/jellybeans_0_0.jpg" align="middle" width="420px" />
+          <p class="image-caption">radius = 0</p>
+        </div>
+
+        <div style="text-align: center">
+          <img
+            src="out/jellybeans_0_0.8.jpg"
+            align="middle"
+            width="420px"
+            style="margin-left: 20px"
+          />
+          <p class="image-caption">radius = 8</p>
+        </div>
+      </div>
+
+      <center style="margin-bottom: 40px">
+        <img
+          src="out/jellybeans_p2.gif"
+          align="middle"
+          height="360px"
+          style="margin-top: 20px"
+        />
+        <p class="image-caption">radius in [1, 8]</p>
+      </center>
+
+      <p>
+        By combining my two methods, I was able to produce aperture adjustments
+        focused on a specific part of the scene.
+      </p>
+
+      <center style="margin-bottom: 40px">
+        <img
+          src="out/chess_p2_2.gif"
+          align="middle"
+          height="360px"
+          style="margin-top: 20px"
+        />
+        <p class="image-caption">c = -0.2, radius in [1, 8]</p>
+      </center>
+    </div>
+
+    <h2 style="margin-top: 40px; font-size: 30px">
+      Project 2: Gradient Domain Fusion
+    </h2>
+
+    <h2 style="margin-top: 40px; font-size: 28px">Part I: Toy Problem</h2>
+
+    <p>
+      The toy problem involves reconstructing an image from an input image using
+      its x and y gradients and one pixel intensity. To do so, I followed these
+      objectives:
+    </p>
+
+    <p>
+      1.
+      <i>min(v(x + 1, y) - v(x, y) - (s(x + 1, y) - s(x, y))) <sup>2</sup></i>
+    </p>
+    <p>
+      2.
+      <i>min(v(x, y + 1) - v(x, y) - (s(x, y + 1) - s(x, y))) <sup>2</sup></i>
+    </p>
+    <p>
+      3. <i>min(v(1, 1) - s(1, 1)) <sup>2</sup></i>
+    </p>
+
+    <p>
+      where the first two objectives denote that the gradients of the
+      reconstructed image should match those of the input image, and the third
+      objective means that the top left corners of the images should have the
+      same color. I wrote these constraints in the form of a least squares
+      problem
+      <i>(Av - b) <sup>2</sup></i
+      >, where <i>A</i> is a sparse matrix, <i>b</i> is a known vector, and
+      <i>v</i> contains the variables to be solved using least squares. Finding
+      <i>v</i> using a sparse least squares solver yields the reconstructed
+      image.
+    </p>
+
+    <div
+      style="
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 40px;
+      "
+    >
+      <div style="text-align: center">
+        <img src="data/toy_problem.png" align="middle" width="250px" />
+        <p class="image-caption">input image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="out/toy_problem.png"
+          align="middle"
+          width="250px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">output image</p>
+      </div>
+    </div>
+
+    <h2 style="margin-top: 40px; font-size: 28px">Part II: Poisson Blending</h2>
+
+    <p>
+      Next, I moved onto poisson blending, a continuation of the toy problem.
+      Using poisson blending, I was able to seamlessly blend two images together
+      by minimizing the squared difference between the gradients in the target
+      and source images. My implementation was similar to that of the previous
+      part, but with the following new objectives:
+    </p>
+
+    <center style="margin-bottom: 25px">
+      <img
+        src="data/poissonblend_eq.png"
+        align="middle"
+        width="600px"
+        style="margin-top: 10px"
+      />
+    </center>
+
+    <p>
+      Here, <i>v<sub>i</sub></i> is the value of the <i>ith</i> pixel with
+      neighboring pixel <i>j</i> ; <i>s<sub>i</sub></i> and
+      <i>t<sub>i</sub></i> are the corresponding pixel values from the source
+      and target images. For each pixel, the first term represents the case when
+      its neighbor lies within the mask, and the second term the case when its
+      neighbor lies outside. After formulating the objectives as a least squares
+      problem, I used a sparse least squares solver to find <i>v</i>, yielding
+      the values of the pixels in the mask. I directly copied these values to
+      the target image.
+    </p>
+
+    <p>
+      To maintain consistent pixel indexing, I resized and aligned the source
+      image to the target image before blending. Blending color images required
+      creating a new <i>b</i> for each channel (<i>A</i> could be kept constant)
+      and stacking the three resulting <i>v</i>
+      together. I was also able to improve the runtime of my implementation by
+      using the
+      <i>scipy.linalg.sparse.csr_matrix</i> to compress <i>A</i> after
+      constructing it.
+    </p>
+
+    <h3 style="font-size: 18px; margin-top: 40px">
+      Result 1: Penguin and hikers
+    </h3>
+
+    <div
+      style="
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 40px;
+      "
+    >
+      <div style="text-align: center">
+        <img src="data/im3.jpg" align="middle" width="320px" />
+        <p class="image-caption">target image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="data/src_1.jpg"
+          align="middle"
+          width="320px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">source image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="data/mask_1.jpg"
+          align="middle"
+          width="320px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">mask</p>
+      </div>
+    </div>
+
+    <center style="margin-bottom: 40px">
+      <img
+        src="out/blended_1.jpg"
+        align="middle"
+        width="600px"
+        style="margin-top: 20px"
+      />
+      <p class="image-caption">blended</p>
+    </center>
+
+    <h3 style="font-size: 18px; margin-top: 40px">Result 2: Penguin family</h3>
+
+    <div
+      style="
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 40px;
+      "
+    >
+      <div style="text-align: center">
+        <img src="data/target_3.jpg" align="middle" width="320px" />
+        <p class="image-caption">target image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="data/src_3.jpg"
+          align="middle"
+          width="320px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">source image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="data/mask_3.jpg"
+          align="middle"
+          width="320px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">mask</p>
+      </div>
+    </div>
+
+    <center style="margin-bottom: 40px">
+      <img
+        src="out/blended_3.jpg"
+        align="middle"
+        width="600px"
+        style="margin-top: 20px"
+      />
+      <p class="image-caption">blended</p>
+    </center>
+
+    <h3 style="font-size: 18px; margin-top: 40px">
+      Result 3: Maru and the Great Sphinx
+    </h3>
+
+    <div
+      style="
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 40px;
+      "
+    >
+      <div style="text-align: center">
+        <img src="data/target_4.jpg" align="middle" width="320px" />
+        <p class="image-caption">target image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="data/src_4.jpg"
+          align="middle"
+          width="320px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">source image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="data/mask_4.jpg"
+          align="middle"
+          width="320px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">mask</p>
+      </div>
+    </div>
+
+    <center style="margin-bottom: 40px">
+      <img
+        src="out/blended_4.jpg"
+        align="middle"
+        width="700px"
+        style="margin-top: 20px"
+      />
+      <p class="image-caption">blended</p>
+    </center>
+
+    <p>
+      The following is my favorite result—the high gradient magnitude between
+      the bright fireworks and the dark background yielded a crisp and
+      well-blended image.
+    </p>
+
+    <h3 style="font-size: 18px; margin-top: 40px">
+      Result 4: Fireworks in sky
+    </h3>
+
+    <div
+      style="
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 40px;
+      "
+    >
+      <div style="text-align: center">
+        <img src="data/target_5_1.jpg" align="middle" width="320px" />
+        <p class="image-caption">target image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="data/src_5_1.jpg"
+          align="middle"
+          width="320px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">source image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="data/mask_5_1.jpg"
+          align="middle"
+          width="320px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">mask</p>
+      </div>
+    </div>
+
+    <div
+      style="
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 20px;
+      "
+    >
+      <div style="text-align: center">
+        <img src="out/blended_5_1.jpg" align="middle" width="320px" />
+        <p class="image-caption">target image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="data/src_5_2.jpg"
+          align="middle"
+          width="320px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">source image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="data/mask_5_2.jpg"
+          align="middle"
+          width="320px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">mask</p>
+      </div>
+    </div>
+
+    <div
+      style="
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 20px;
+      "
+    >
+      <div style="text-align: center">
+        <img src="out/blended_5_2.jpg" align="middle" width="320px" />
+        <p class="image-caption">target image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="data/src_5_3.jpg"
+          align="middle"
+          width="320px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">source image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="data/mask_5_3.jpg"
+          align="middle"
+          width="320px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">mask</p>
+      </div>
+    </div>
+
+    <center style="margin-bottom: 40px">
+      <img
+        src="out/blended_5_3.jpg"
+        align="middle"
+        width="600px"
+        style="margin-top: 20px"
+      />
+      <p class="image-caption">blended</p>
+    </center>
+
+    <p>
+      I also included the first blend I attempted as a failure case. As you can
+      see, Mimi and Maru were both tinted green. This probably happened because
+      the source backgrounds were very different from the green target
+      background. I made sure to select source images with a similar background
+      to the target image for my other blends.
+    </p>
+
+    <h3 style="font-size: 18px; margin-top: 40px">
+      Result 5: Maru, Mimi, and lion
+    </h3>
+
+    <div
+      style="
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 40px;
+      "
+    >
+      <div style="text-align: center">
+        <img src="data/target_2_1.jpg" align="middle" width="320px" />
+        <p class="image-caption">target image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="data/src_2_1.jpg"
+          align="middle"
+          width="320px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">source image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="data/mask_2_1.jpg"
+          align="middle"
+          width="320px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">mask</p>
+      </div>
+    </div>
+
+    <div
+      style="
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 20px;
+      "
+    >
+      <div style="text-align: center">
+        <img src="out/blended_2_1.jpg" align="middle" width="320px" />
+        <p class="image-caption">target image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="data/src_2_2.jpg"
+          align="middle"
+          width="320px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">source image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="data/mask_2_2.jpg"
+          align="middle"
+          width="320px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">mask</p>
+      </div>
+    </div>
+
+    <center style="margin-bottom: 40px">
+      <img
+        src="out/blended_2_2.jpg"
+        align="middle"
+        width="600px"
+        style="margin-top: 20px"
+      />
+      <p class="image-caption">blended</p>
+    </center>
+
+    <h2 style="margin-top: 40px; font-size: 28px">
+      Part III: Bells & Whistles
+    </h2>
+
+    <p>
+      Finally, I implemented mixed gradients by editing poisson blending
+      according to the following equation:
+    </p>
+
+    <center style="margin-bottom: 25px">
+      <img
+        src="data/textureblend_eq.png"
+        align="middle"
+        width="600px"
+        style="margin-top: 10px"
+      />
+    </center>
+
+    <p>
+      where <i>d<sub>ij</sub></i> is the value of the gradient with a larger
+      magnitude—i.e., <i>d<sub>ij</sub> = s<sub>i</sub> - s<sub>j</sub></i> if
+      <i
+        >abs(s<sub>i</sub> - s<sub>j</sub>) > abs(t<sub>i</sub> -
+        t<sub>j</sub>)</i
+      >, and <i>t<sub>i</sub> - t<sub>j</sub></i> otherwise. Using mixed
+      gradients generally improves the blended images. When the source
+      background is textured differently from the target background, the mask is
+      clearly visible in the result. With gradient mixing, however, the mask
+      takes on the texture of the target, creating a much more natural image.
+    </p>
+
+    <h3 style="font-size: 18px; margin-top: 40px">
+      Result 1: "Cal" on cupcake
+    </h3>
+
+    <div
+      style="
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 40px;
+      "
+    >
+      <div style="text-align: center">
+        <img src="data/target_6.jpg" align="middle" width="320px" />
+        <p class="image-caption">target image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="data/src_6.jpg"
+          align="middle"
+          width="320px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">source image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="data/mask_6.jpg"
+          align="middle"
+          width="320px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">mask</p>
+      </div>
+    </div>
+
+    <div
+      style="
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 40px;
+      "
+    >
+      <div style="text-align: center">
+        <img src="out/blended_6_1.jpg" align="middle" width="450px" />
+        <p class="image-caption">blended (naive)</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="out/blended_6_2.jpg"
+          align="middle"
+          width="450px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">blended (mixed gradients)</p>
+      </div>
+    </div>
+
+    <h3 style="font-size: 18px; margin-top: 40px">Result 2: Rainbow in sky</h3>
+
+    <div
+      style="
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 40px;
+      "
+    >
+      <div style="text-align: center">
+        <img src="data/target_7.jpg" align="middle" width="320px" />
+        <p class="image-caption">target image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="data/src_7.jpg"
+          align="middle"
+          width="320px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">source image</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="data/mask_7.jpg"
+          align="middle"
+          width="320px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">mask</p>
+      </div>
+    </div>
+
+    <div
+      style="
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 40px;
+      "
+    >
+      <div style="text-align: center">
+        <img src="out/blended_7_1.jpg" align="middle" width="450px" />
+        <p class="image-caption">blended (naive)</p>
+      </div>
+
+      <div style="text-align: center">
+        <img
+          src="out/blended_7_2.jpg"
+          align="middle"
+          width="450px"
+          style="margin-left: 20px"
+        />
+        <p class="image-caption">blended (mixed gradients)</p>
+      </div>
+    </div>
+  </body>
+</html>
